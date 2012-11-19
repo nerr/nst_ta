@@ -1,4 +1,4 @@
-/* Nerr SmartTrader - Triangular Arbitrage
+/* Nerr Smart Trader - Triangular Arbitrage Trading System
  *
  * By Leon Zhuang
  * Twitter @Nerrsoft
