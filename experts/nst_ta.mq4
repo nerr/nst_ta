@@ -1,12 +1,10 @@
-/* Nerr SmartTrader - Triangular Arbitrage
+/* Nerr Smart Trader - Triangular Arbitrage Trading System
  *
  * By Leon Zhuang
  * Twitter @Nerrsoft
  * leon@nerrsoft.com
  * http://nerrsoft.com
- * 
- * This EA can only work on EURJPY M1 chart
- * 
+ *  
  * @History
  * v0.0.2  [dev] 2012-05-01 add information on display chart. 
  * v0.0.3  [dev] 2012-05-03 recode information display format, fix some typo. 
@@ -25,32 +23,264 @@
  * v0.0.16 [dev] 2012-05-29 split ta fun with TAOpen() and TAClose().
  * v0.0.17 [dev] 2012-05-29 fix checkProfit() bug; add real ring FPI var.
  * v0.0.18 [dev] 2012-05-30 add margin level check.fix margin level cal bug.
+ * v0.1.0  [dev] 2012-11-19 new begin;
+ * v0.1.1  [dev] 2012-11-20 finished calcu fpi indicator and show it on chart;
  * 
  * @Todo
- * # add money mangment
- * # set ea se file
  */
+
+
 
 #property copyright "Copyright ? 2012 Nerrsoft.com"
 #property link      "http://nerrsoft.com"
 
-//-- extern var
-extern string BasePair 		= "---------Base Pair---------";
-extern string aSymbol 		= "EURJPY";
-extern string HedgePairs 	= "---------Hedge Pairs---------";
-extern string bSymbol 		= "EURUSD";
-extern string cSymbol 		= "USDJPY";
+
+
+/* 
+ * define extern
+ *
+ */
+
 extern string ControlTrade  = "---------Control Trade--------";
 extern bool   EnableTrade 	= false;
 extern double bOpenThold  	= 0.9995;
 extern double sOpenThold  	= 1.0007;
 extern double BaseLots    	= 1.0;
-extern int 	  MaxSpread		= 90;
-extern int 	  MagicNumber 	= 999;
+//extern int 	  MaxSpread		= 90;
+extern int 	  MagicNumber 	= 99901;
 extern string MoneyMangment = "---------Money Mangment(not complete)---------";
 extern bool   EnableMM 		= false;
 
-//-- global var
+
+/* 
+ * Global variable
+ *
+ */
+
+string Ring[15,4], SymExt;
+double FPI[15][7];
+
+
+
+/* 
+ * System Funcs
+ *
+ */
+
+//-- init
+int init()
+{
+	//-- Set up Rings
+	Ring[ 1,1] = "EURCHF"; Ring[ 1,2] = "EURUSD"; Ring[ 1,3] = "USDCHF";
+	Ring[ 2,1] = "EURCHF"; Ring[ 2,2] = "EURGBP"; Ring[ 2,3] = "GBPCHF";
+	Ring[ 3,1] = "EURJPY"; Ring[ 3,2] = "EURAUD"; Ring[ 3,3] = "AUDJPY";
+	Ring[ 4,1] = "EURJPY"; Ring[ 4,2] = "EURCHF"; Ring[ 4,3] = "CHFJPY";
+	Ring[ 5,1] = "EURJPY"; Ring[ 5,2] = "EURGBP"; Ring[ 5,3] = "GBPJPY";
+	Ring[ 6,1] = "EURJPY"; Ring[ 6,2] = "EURUSD"; Ring[ 6,3] = "USDJPY";
+	Ring[ 7,1] = "EURCAD"; Ring[ 7,2] = "EURUSD"; Ring[ 7,3] = "USDCAD";
+	Ring[ 8,1] = "EURUSD"; Ring[ 8,2] = "EURAUD"; Ring[ 8,3] = "AUDUSD";
+	Ring[ 9,1] = "EURUSD"; Ring[ 9,2] = "EURGBP"; Ring[ 9,3] = "GBPUSD";
+	Ring[10,1] = "GBPJPY"; Ring[10,2] = "GBPCHF"; Ring[10,3] = "CHFJPY";
+	Ring[11,1] = "GBPJPY"; Ring[11,2] = "GBPUSD"; Ring[11,3] = "USDJPY";
+	Ring[12,1] = "GBPCHF"; Ring[12,2] = "GBPUSD"; Ring[12,3] = "USDCHF";
+	Ring[13,1] = "AUDJPY"; Ring[13,2] = "AUDUSD"; Ring[13,3] = "USDJPY";
+	Ring[14,1] = "USDJPY"; Ring[14,2] = "USDCHF"; Ring[14,3] = "CHFJPY";
+
+	//-- Fix Symbol Names for all Brokers
+	if(StringLen(Symbol()) > 6)                                               
+	{
+		SymExt = StringSubstr(Symbol(),6);
+		for(int i = 1; i < 15; i ++)
+		{
+			for(int j = 1; j < 4; j ++) 
+				Ring[i,j] = Ring[i,j] + SymExt;
+		}
+	}
+
+	//-- initDebugInfo
+	initDebugInfo(Ring);
+	return(0);
+}
+
+//-- deinit
+int deinit()
+{
+	return(0);
+}
+
+//-- start
+int start()
+{
+	getFPI(FPI);
+
+	updateDubugInfo(FPI);
+
+	return(0);
+}
+
+
+
+/* 
+ * Debug Funcs
+ *
+ */
+
+//-- output log
+void outputLog(string _logtext, string _type="Information")
+{
+	string text = ">>>" + _type + ":" + _logtext;
+	Print (text);
+}
+
+//-- send alert
+void sendAlert(string _text = "null")
+{
+	outputLog(_text);
+	PlaySound("alert.wav");
+	Alert(_text);
+}
+
+//-- init debug info object on chart
+void initDebugInfo(string _ring[][])
+{
+	int y = 0;
+
+	//-- background
+	ObjectCreate("background_1", OBJ_LABEL, 0, 0, 0);
+	ObjectSetText("background_1", "g", 300, "Webdings", DarkGreen);
+	ObjectSet("background_1", OBJPROP_BACK, false);
+	ObjectSet("background_1", OBJPROP_XDISTANCE, 20);
+	ObjectSet("background_1", OBJPROP_YDISTANCE, 13);
+
+	ObjectCreate("background_2", OBJ_LABEL, 0, 0, 0);
+	ObjectSetText("background_2", "g", 300, "Webdings", DarkGreen);
+	ObjectSet("background_2", OBJPROP_BACK, false);
+	ObjectSet("background_2", OBJPROP_XDISTANCE, 420);
+	ObjectSet("background_2", OBJPROP_YDISTANCE, 13);
+
+	//-- broker price table header
+	y += 15;
+	createTextObj("table_header_col_1", 25,	y, "Ring");
+	createTextObj("table_header_col_2", 75, y, "SymbolA");
+	createTextObj("table_header_col_3", 145,y, "SymbolB");
+	createTextObj("table_header_col_4", 215,y, "SymbolC");
+	createTextObj("table_header_col_5", 285,y, "bFPI");
+	createTextObj("table_header_col_6", 375,y, "bHighest");
+	createTextObj("table_header_col_7", 465,y, "bLowest");
+	createTextObj("table_header_col_8", 555,y, "sFPI");
+	createTextObj("table_header_col_9", 645,y, "sHighest");
+	createTextObj("table_header_col_10",735,y, "sLowest");
+
+	//-- broker price table body
+	for(int i = 1; i < 15; i ++)
+	{
+		y += 15;
+		for (int j = 1; j < 4; j ++) 
+		{
+			createTextObj("table_body_row_" + i + "_col_1", 25,	y, i, Gray);
+			createTextObj("table_body_row_" + i + "_col_2", 75,	y, _ring[i,1], White);
+			createTextObj("table_body_row_" + i + "_col_3", 145,y, _ring[i,2], White);
+			createTextObj("table_body_row_" + i + "_col_4", 215,y, _ring[i,3], White);
+			createTextObj("table_body_row_" + i + "_col_5", 285,y);
+			createTextObj("table_body_row_" + i + "_col_6", 375,y);
+			createTextObj("table_body_row_" + i + "_col_7", 465,y);
+			createTextObj("table_body_row_" + i + "_col_8", 555,y);
+			createTextObj("table_body_row_" + i + "_col_9", 645,y);
+			createTextObj("table_body_row_" + i + "_col_10",735,y);
+		}
+	}
+
+	y += 15 * 2;
+	createTextObj("table_header_col_1", 25,	y, "Ring", White);
+}
+
+//--  update new debug info to chart
+void updateDubugInfo(double _fpi[][])
+{
+	int digit = Digits;
+
+	for(int i = 1; i < 15; i++)	//-- row 5 to row 10
+	{
+		for(int j = 5; j < 11; j++)
+		{
+			if(j==5 || j==8)
+				setTextObj("table_body_row_" + i + "_col_" + j, _fpi[i][j-4], DeepSkyBlue);
+			else if(j==7 || j==9)
+				setTextObj("table_body_row_" + i + "_col_" + j, _fpi[i][j-4], Crimson);
+			else
+				setTextObj("table_body_row_" + i + "_col_" + j, _fpi[i][j-4], SteelBlue);
+		}
+	}
+}
+
+//-- create text object
+void createTextObj(string objName, int xDistance, int yDistance, string objText="", color fontcolor=GreenYellow, string font="Courier New", int fontsize=9)
+{
+	if(ObjectFind(objName)<0)
+	{
+		ObjectCreate(objName, OBJ_LABEL, 0, 0, 0);
+		ObjectSetText(objName, objText, fontsize, font, fontcolor);
+		ObjectSet(objName, OBJPROP_XDISTANCE,	xDistance);
+		ObjectSet(objName, OBJPROP_YDISTANCE, 	yDistance);
+	}
+}
+
+//-- set text object new value
+void setTextObj(string objName, string objText="", color fontcolor=White, string font="Courier New", int fontsize=9)
+{
+	if(ObjectFind(objName)>-1)
+	{
+		ObjectSetText(objName, objText, fontsize, font, fontcolor);
+	}
+}
+
+
+
+/*
+ * Trade funcs
+ *
+ */
+
+//-- get FPI indicator
+void getFPI(double &_fpi[][])
+{
+	RefreshRates();
+
+	for(int i = 1; i < 15; i ++)
+	{
+		//-- buy fpi
+		_fpi[i][1] = MarketInfo(Ring[i][1], MODE_ASK) / (MarketInfo(Ring[i][2], MODE_BID) * MarketInfo(Ring[i][3], MODE_BID));
+		//-- buy FPI history
+		if(_fpi[i][2]==0 || _fpi[i][1]>_fpi[i][2]) _fpi[i][2] = _fpi[i][1];
+		if(_fpi[i][3]==0 || _fpi[i][1]<_fpi[i][3]) _fpi[i][3] = _fpi[i][1];
+
+		//-- sell fpi
+		_fpi[i][4] = MarketInfo(Ring[i][1], MODE_BID) / (MarketInfo(Ring[i][2], MODE_ASK) * MarketInfo(Ring[i][3], MODE_ASK));
+		//-- sell FPI history
+		if(_fpi[i][5]==0 || _fpi[i][4]>_fpi[i][5]) _fpi[i][5] = _fpi[i][4];
+		if(_fpi[i][6]==0 || _fpi[i][4]<_fpi[i][6]) _fpi[i][6] = _fpi[i][4];
+
+		//-- spread
+		//_fpi[i][7] = MarketInfo(Ring[i][1], MODE_SPREAD) + MarketInfo(Ring[i][2], MODE_SPREAD) + MarketInfo(Ring[i][3], MODE_SPREAD);
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+//-- global vars
 int CloseSP = 3;
 int aDigits, bDigits, cDigits;
 double Price[4];
@@ -63,14 +293,38 @@ double ringProfit;
 int totalSpread;
 double realRingFPI;
 
-//-- The information of this EA
-string eaName	   = "NerrSmartTrader - TA";
-string eaVersion   = "0.0.18 [dev]";
-string eaCopyright = "Copyright ? 2012 Nerrsoft.com";
+
 
 //-- init
 int init()
 {
+	//----------------------- Set up Rings ----------------------------
+	Ring[ 1,1] = "EURCHF"; Ring[ 1,2] = "EURUSD"; Ring[ 1,3] = "USDCHF";
+	Ring[ 2,1] = "EURCHF"; Ring[ 2,2] = "EURGBP"; Ring[ 2,3] = "GBPCHF";
+	Ring[ 3,1] = "EURJPY"; Ring[ 3,2] = "EURAUD"; Ring[ 3,3] = "AUDJPY";
+	Ring[ 4,1] = "EURJPY"; Ring[ 4,2] = "EURCHF"; Ring[ 4,3] = "CHFJPY";
+	Ring[ 5,1] = "EURJPY"; Ring[ 5,2] = "EURGBP"; Ring[ 5,3] = "GBPJPY";
+	Ring[ 6,1] = "EURJPY"; Ring[ 6,2] = "EURUSD"; Ring[ 6,3] = "USDJPY";
+	Ring[ 7,1] = "EURCAD"; Ring[ 7,2] = "EURUSD"; Ring[ 7,3] = "USDCAD";
+	Ring[ 8,1] = "EURUSD"; Ring[ 8,2] = "EURAUD"; Ring[ 8,3] = "AUDUSD";
+	Ring[ 9,1] = "EURUSD"; Ring[ 9,2] = "EURGBP"; Ring[ 9,3] = "GBPUSD";
+	Ring[10,1] = "GBPJPY"; Ring[10,2] = "GBPCHF"; Ring[10,3] = "CHFJPY";
+	Ring[11,1] = "GBPJPY"; Ring[11,2] = "GBPUSD"; Ring[11,3] = "USDJPY";
+	Ring[12,1] = "GBPCHF"; Ring[12,2] = "GBPUSD"; Ring[12,3] = "USDCHF";
+	Ring[13,1] = "AUDJPY"; Ring[13,2] = "AUDUSD"; Ring[13,3] = "USDJPY";
+	Ring[14,1] = "USDJPY"; Ring[14,2] = "USDCHF"; Ring[14,3] = "CHFJPY";
+
+
+
+
+
+
+
+
+
+
+
+
 	aDigits = MarketInfo(aSymbol, MODE_DIGITS);
 	bDigits = MarketInfo(bSymbol, MODE_DIGITS);
 	cDigits = MarketInfo(cSymbol, MODE_DIGITS);
@@ -112,14 +366,14 @@ int start()
 	}
 
 	watermark();
-}
+} */
 
 /* triangularAribitrange()
  *
  * use for check FPI value, control open order and close order
  *
  */
-void TAOpen()
+/*void TAOpen()
 {
 	//-- open order
 	if(buyFPI<=bOpenThold && buyFPI>0 && totalSpread<=MaxSpread)
@@ -190,7 +444,7 @@ double getRealFPI()
 	}
 	fpi = aprice / (bprice * cprice);
 	return(fpi);
-}
+} */
 
 /* getPrice()
  *
@@ -199,7 +453,7 @@ double getRealFPI()
  * calculate api
  *
  */
-void getPrice()
+/*void getPrice()
 {
 	RefreshRates();
 	//-- FPI
@@ -451,4 +705,4 @@ void watermark()
 		ObjectSet("FOOTER", OBJPROP_XDISTANCE, 5);
 		ObjectSet("FOOTER", OBJPROP_YDISTANCE, 10);
 	}
-}
+}*/
