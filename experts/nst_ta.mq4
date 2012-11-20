@@ -26,6 +26,7 @@
  * v0.1.0  [dev] 2012-11-19 new begin;
  * v0.1.1  [dev] 2012-11-20 finished calcu fpi indicator and show it on chart;
  * v0.1.2  [dev] 2012-11-20 finished new openRing() func, if price change than open limit order;
+ * v0.1.3  [dev] 2012-11-20 finished the open order and check trade chance, no grammar error but not test yet;
  * 
  * @Todo
  */
@@ -43,12 +44,10 @@
  */
 
 extern string ControlTrade  = "---------Control Trade--------";
-extern bool   EnableTrade 	= false;
-extern double bOpenThold  	= 0.9995;
-extern double sOpenThold  	= 1.0007;
-extern double BaseLots    	= 1.0;
-//extern int 	  MaxSpread		= 90;
-extern int 	  MagicNumber 	= 99901;
+extern bool 	EnableTrade 	= false;
+extern bool 	Superaddition	= false;
+extern double 	BaseLots    	= 0.5;
+extern int 		MagicNumber 	= 99901;
 extern string MoneyMangment = "---------Money Mangment(not complete)---------";
 extern bool   EnableMM 		= false;
 
@@ -59,7 +58,7 @@ extern bool   EnableMM 		= false;
  */
 
 string Ring[15,4], SymExt;
-double FPI[15,5];
+double FPI[15,5], RingOrd[15, 3];
 
 
 
@@ -112,6 +111,8 @@ int deinit()
 //-- start
 int start()
 {
+	checkCurrentOrder(RingOrd);
+
 	getFPI(FPI);
 
 	updateDubugInfo(FPI);
@@ -169,8 +170,6 @@ void initDebugInfo(string _ring[][])
 	createTextObj("table_header_col_6", 375,y, "bLowest");
 	createTextObj("table_header_col_7", 465,y, "sFPI");
 	createTextObj("table_header_col_8", 555,y, "sHighest");
-	//createTextObj("table_header_col_6", 375,y, "bHighest");
-	//createTextObj("table_header_col_10",735,y, "sLowest");
 
 	//-- broker price table body
 	for(int i = 1; i < 15; i ++)
@@ -186,8 +185,6 @@ void initDebugInfo(string _ring[][])
 			createTextObj("table_body_row_" + i + "_col_6", 375,y);
 			createTextObj("table_body_row_" + i + "_col_7", 465,y);
 			createTextObj("table_body_row_" + i + "_col_8", 555,y);
-			//createTextObj("table_body_row_" + i + "_col_9", 645,y);
-			//createTextObj("table_body_row_" + i + "_col_10",735,y);
 		}
 	}
 
@@ -254,50 +251,48 @@ void getFPI(double &_fpi[][])
 		_price[3] = MarketInfo(Ring[i][3], MODE_BID);
 		//-- buy fpi
 		_fpi[i][1] = _price[1] / (_price[2] * _price[3]);
-		//-- buy FPI history
-		if(_fpi[i][2]==0 || _fpi[i][1]<_fpi[i][2]) _fpi[i][2] = _fpi[i][1];
 		//-- check buy chance
-		/*if()
+		if(_fpi[i][1] < 0.9995 && EnableTrade == true && (RingOrd[i][0] == 0 || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
 		{
 			openRing(0, i, _price, _fpi[i][1]);
-		}*/
+		}
+		//-- buy FPI history
+		if(_fpi[i][2]==0 || _fpi[i][1]<_fpi[i][2]) 
+			_fpi[i][2] = _fpi[i][1];
 
 		_price[1] = MarketInfo(Ring[i][1], MODE_BID);
 		_price[2] = MarketInfo(Ring[i][2], MODE_ASK);
 		_price[3] = MarketInfo(Ring[i][3], MODE_ASK);
 		//-- sell fpi
 		_fpi[i][3] = _price[1] / (_price[2] * _price[3]);
-		//-- sell FPI history
-		if(_fpi[i][4]==0 || _fpi[i][3]>_fpi[i][4]) _fpi[i][4] = _fpi[i][3];
 		//-- check sell chance
-		/*if()
+		if(_fpi[i][1] < 0.9995 && EnableTrade == true && (RingOrd[i][0] == 0 || (Superaddition == true && _fpi[i][1] >= RingOrd[i][1] + 0.0005)))
 		{
 			openRing(1, i, _price, _fpi[i][3]);
-		}*/
+		}
+		//-- sell FPI history
+		if(_fpi[i][4]==0 || _fpi[i][3]>_fpi[i][4]) 
+			_fpi[i][4] = _fpi[i][3];
 	}
 }
 
 //-- open ring _direction = 0(buy)/1(sell)
 bool openRing(int _direction, int _index, double _price[], double _fpi)
 {
-	/*bool status = true;
-	string commentText = "";
-	int b_c_orderType;*/
-
-	int ticketno[4], b_c_direction, i, limit_direction;
+   string commentText;
+	int ticketno[4];
+	int b_c_direction, i, limit_direction;
 	double c_lots;
 	
 	//-- adjust b c order direction
 	if(_direction==0)
-	{
 		b_c_direction = 1;
-		commentText = "B@" + _fpi;
-	}
 	else if(_direction==1)
-	{
 		b_c_direction = 0;
-		commentText = "S@" + _fpi;
-	}
+
+	//-- make comment string
+	commentText = _index + "|" + _direction + "@" + _fpi;
+
 	//-- calculate last symbol order losts
 	c_lots = NormalizeDouble(BaseLots * _price[2], 2);
 
@@ -368,6 +363,52 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 	}
 
 	return(true);
+}
+
+//-- check current order
+void checkCurrentOrder(double &_ringord[][])
+{
+	double ringfpi;
+	int i, j, ringindex, ringdirection;
+	int total = OrdersTotal();
+	//string 
+
+	if(total == 0)
+	{
+		for(i = 1; i < 15; i++)
+		{
+			_ringord[i][0] = 0; //-- order number of ring
+			_ringord[i][1] = 0; //-- order fpi of ring
+		}
+	}
+	else
+	{
+		for(i = 0; i <= total; i++)
+		{
+			if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+			{
+				if(OrderMagicNumber() == MagicNumber)
+				{
+					getInfoByComment(OrderComment(), ringindex, ringdirection, ringfpi);
+
+					_ringord[ringindex][0]++;
+					if(_ringord[ringindex][1] < ringfpi)
+						_ringord[ringindex][1] = ringfpi;
+				}
+			}
+		}
+	}
+}
+
+//--
+void getInfoByComment(string _commont, int &_index, int &_direction, double &_fpi)
+{
+	int verticalchart = StringFind(_commont, "|", 0);
+	int atchart = StringFind(_commont, "@", verticalchart);
+
+	_fpi = StrToDouble(StringSubstr(_commont, atchart+1, 0));
+	_direction = StrToDouble(StringSubstr(_commont, verticalchart+1, 1));
+	_index = StrToInteger(StringSubstr(_commont, 0, verticalchart));
 }
 
 
@@ -626,70 +667,7 @@ double checkProfit()
 	return(ringprofit);
 }
 
-//-- 0=buy; 1=sell
-bool openRing(int orderType)
-{
-	bool status = true;
-	string commentText = "";
-	color openColor;
-	int b_c_orderType;
-	double a_openPrice,b_openPrice,c_openPrice;
-	int ticket_a, ticket_b, ticket_c;
 
-	double c_lot;
-	
-	if(orderType==0)
-	{
-		openColor = Blue;
-		commentText = OrderCommentString+"B@"+buyFPI;
-		b_c_orderType = 1;
-		
-		RefreshRates();
-		c_lot = NormalizeDouble(BaseLots*MarketInfo(bSymbol, MODE_ASK), 2);
-		a_openPrice = NormalizeDouble(MarketInfo(aSymbol, MODE_BID), MarketInfo(aSymbol, MODE_DIGITS));
-		b_openPrice = NormalizeDouble(MarketInfo(bSymbol, MODE_ASK), MarketInfo(bSymbol, MODE_DIGITS));
-		c_openPrice = NormalizeDouble(MarketInfo(cSymbol, MODE_ASK), MarketInfo(cSymbol, MODE_DIGITS));
-	}
-	else{
-		openColor = Red;
-		commentText = OrderCommentString+"S@"+sellFPI;
-		b_c_orderType = 0;
-		
-		RefreshRates();
-		c_lot = NormalizeDouble(BaseLots*MarketInfo(bSymbol, MODE_BID), 2); 
-		a_openPrice = NormalizeDouble(MarketInfo(aSymbol, MODE_ASK), MarketInfo(aSymbol, MODE_DIGITS));
-		b_openPrice = NormalizeDouble(MarketInfo(bSymbol, MODE_BID), MarketInfo(bSymbol, MODE_DIGITS));
-		c_openPrice = NormalizeDouble(MarketInfo(cSymbol, MODE_BID), MarketInfo(cSymbol, MODE_DIGITS));
-	}
-	
-	while (TRUE)
-	{
-		TicketNo[3] = OrderSend(cSymbol, b_c_orderType, NormalizeDouble(c_lot,Digits), MarketInfo(cSymbol, MODE_BID), 3, 0, 0, commentText, MagicNumber, 0, openColor);
-		Print(aSymbol+"_"+bSymbol+"_"+cSymbol+"===TicketNo[3] : ",TicketNo[3]);
-		if (TicketNo[3] > 0) break;
-		//Sleep(50);
-	}
-
-	while (TRUE)
-	{            
-		TicketNo[2] = OrderSend(bSymbol, b_c_orderType, NormalizeDouble(BaseLots,Digits), MarketInfo(bSymbol, MODE_BID), 3, 0, 0, commentText, MagicNumber, 0, openColor);
-		Print(aSymbol+"_"+bSymbol+"_"+cSymbol+"===TicketNo[2] : ",TicketNo[2]);
-		if (TicketNo[2] > 0) break;
-		//Sleep(50);
-	}
-
-	while (TRUE)
-	{
-		TicketNo[1] = OrderSend(aSymbol, orderType, NormalizeDouble(BaseLots,Digits), MarketInfo(aSymbol, MODE_ASK), 3, 0, 0, commentText, MagicNumber, 0, openColor);
-		Print(aSymbol+"_"+bSymbol+"_"+cSymbol+"===TicketNo[1] : ",TicketNo[1]);
-		if (TicketNo[1] > 0) break;
-		//Sleep(50);
-	}
-
-    //-- todo - check order send status
-
-	return(true);
-}
 
 int closeRing()
 {
@@ -724,89 +702,4 @@ int closeRing()
 	return(0);
 }
 
-
-//
-void watermark()
-{
-	string ComSpacer = "";
-
-	ComSpacer = ComSpacer
-	+ "\n"
-	+ "\n"
-	+ "\n  Version " + eaVersion
-	+ "\n  " + eaCopyright
-	+ "\n  http://nerrsoft.com"
-	+ "\n  Follow me on twitter @Nerrsoft"
-	+ "\n -----------------------------------------------"
-	+ "\n  "   + aSymbol + " - " + bSymbol + " - " + cSymbol
-	+ "\n -----------------------------------------------"
-	+ "\n  FPI_BUY : "   + buyFPI
-	+ "\n  Low2High: "   + DoubleToStr(buy_lFPI, 5) + " - " + DoubleToStr(buy_hFPI, 5)
-	+ "\n -----------------------------------------------"
-	+ "\n  FPI_SELL: "   + sellFPI
-	+ "\n  Low2High: "   + DoubleToStr(sell_lFPI, 5) + " - " + DoubleToStr(sell_hFPI, 5)
-	+ "\n -----------------------------------------------"
-	+ "\n  All Spread: "   + totalSpread
-	+ "\n -----------------------------------------------";
-
-	if(countOrder()==0)
-	{
-		ComSpacer = ComSpacer
-		+ "\n  No Ring."
-		+ "\n -----------------------------------------------";
-	}
-	else
-	{
-		ComSpacer = ComSpacer
-		+ "\n  Ring Being @ "+ realRingFPI
-		+ "\n -----------------------------------------------"
-		+ "\n  RingProfit"
-		+ "\n  Low2High: "+  DoubleToStr(lProfit, 2) + " to " +  DoubleToStr(hProfit, 2)
-		+ "\n  Current: "+  DoubleToStr(ringProfit, 2);
-	}
-
-	Comment(ComSpacer);
-
-	if (ObjectFind("TITLE") < 0) {
-		ObjectCreate("TITLE", OBJ_LABEL, 0, 0, 0);
-		ObjectSetText("TITLE", eaName, 9, "Courier New", White);
-		ObjectSet("TITLE", OBJPROP_CORNER, 0);
-		ObjectSet("TITLE", OBJPROP_BACK, FALSE);
-		ObjectSet("TITLE", OBJPROP_XDISTANCE, 9);
-		ObjectSet("TITLE", OBJPROP_YDISTANCE, 23);
-	}
-
-	if (ObjectFind("BGINFO1") < 0) {
-		ObjectCreate("BGINFO1", OBJ_LABEL, 0, 0, 0);
-		ObjectSetText("BGINFO1", "g", 110, "Webdings", MediumVioletRed);
-		ObjectSet("BGINFO1", OBJPROP_CORNER, 0);
-		ObjectSet("BGINFO1", OBJPROP_BACK, TRUE);
-		ObjectSet("BGINFO1", OBJPROP_XDISTANCE, 5);
-		ObjectSet("BGINFO1", OBJPROP_YDISTANCE, 15);
-	}
-
-	if (ObjectFind("BGINFO2") < 0) {
-		ObjectCreate("BGINFO2", OBJ_LABEL, 0, 0, 0);
-		ObjectSetText("BGINFO2", "g", 110, "Webdings", OliveDrab);
-		ObjectSet("BGINFO2", OBJPROP_BACK, TRUE);
-		ObjectSet("BGINFO2", OBJPROP_XDISTANCE, 5);
-		ObjectSet("BGINFO2", OBJPROP_YDISTANCE, 45);
-	}
-
-	if (ObjectFind("BGINFO3") < 0) {
-		ObjectCreate("BGINFO3", OBJ_LABEL, 0, 0, 0);
-		ObjectSetText("BGINFO3", "g", 110, "Webdings", OliveDrab);
-		ObjectSet("BGINFO3", OBJPROP_CORNER, 0);
-		ObjectSet("BGINFO3", OBJPROP_BACK, TRUE);
-		ObjectSet("BGINFO3", OBJPROP_XDISTANCE, 5);
-		ObjectSet("BGINFO3", OBJPROP_YDISTANCE, 150);
-	}
-
-	if (ObjectFind("FOOTER") < 0) {
-		ObjectCreate("FOOTER", OBJ_LABEL, 0, 0, 0);
-		ObjectSetText("FOOTER", eaName + " " + eaVersion + " " +  eaCopyright, 9, "Arial", DeepSkyBlue);
-		ObjectSet("FOOTER", OBJPROP_CORNER, 2);
-		ObjectSet("FOOTER", OBJPROP_XDISTANCE, 5);
-		ObjectSet("FOOTER", OBJPROP_YDISTANCE, 10);
-	}
-}*/
+*/
