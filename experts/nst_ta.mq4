@@ -25,6 +25,7 @@
  * v0.0.18 [dev] 2012-05-30 add margin level check.fix margin level cal bug.
  * v0.1.0  [dev] 2012-11-19 new begin;
  * v0.1.1  [dev] 2012-11-20 finished calcu fpi indicator and show it on chart;
+ * v0.1.2  [dev] 2012-11-20 finished new openRing() func, if price change than open limit order;
  * 
  * @Todo
  */
@@ -58,7 +59,7 @@ extern bool   EnableMM 		= false;
  */
 
 string Ring[15,4], SymExt;
-double FPI[15][7];
+double FPI[15,5];
 
 
 
@@ -165,11 +166,11 @@ void initDebugInfo(string _ring[][])
 	createTextObj("table_header_col_3", 145,y, "SymbolB");
 	createTextObj("table_header_col_4", 215,y, "SymbolC");
 	createTextObj("table_header_col_5", 285,y, "bFPI");
-	createTextObj("table_header_col_6", 375,y, "bHighest");
-	createTextObj("table_header_col_7", 465,y, "bLowest");
-	createTextObj("table_header_col_8", 555,y, "sFPI");
-	createTextObj("table_header_col_9", 645,y, "sHighest");
-	createTextObj("table_header_col_10",735,y, "sLowest");
+	createTextObj("table_header_col_6", 375,y, "bLowest");
+	createTextObj("table_header_col_7", 465,y, "sFPI");
+	createTextObj("table_header_col_8", 555,y, "sHighest");
+	//createTextObj("table_header_col_6", 375,y, "bHighest");
+	//createTextObj("table_header_col_10",735,y, "sLowest");
 
 	//-- broker price table body
 	for(int i = 1; i < 15; i ++)
@@ -185,8 +186,8 @@ void initDebugInfo(string _ring[][])
 			createTextObj("table_body_row_" + i + "_col_6", 375,y);
 			createTextObj("table_body_row_" + i + "_col_7", 465,y);
 			createTextObj("table_body_row_" + i + "_col_8", 555,y);
-			createTextObj("table_body_row_" + i + "_col_9", 645,y);
-			createTextObj("table_body_row_" + i + "_col_10",735,y);
+			//createTextObj("table_body_row_" + i + "_col_9", 645,y);
+			//createTextObj("table_body_row_" + i + "_col_10",735,y);
 		}
 	}
 
@@ -201,14 +202,12 @@ void updateDubugInfo(double _fpi[][])
 
 	for(int i = 1; i < 15; i++)	//-- row 5 to row 10
 	{
-		for(int j = 5; j < 11; j++)
+		for(int j = 5; j < 9; j++)
 		{
-			if(j==5 || j==8)
+			if(j==5 || j==7)
 				setTextObj("table_body_row_" + i + "_col_" + j, _fpi[i][j-4], DeepSkyBlue);
-			else if(j==7 || j==9)
-				setTextObj("table_body_row_" + i + "_col_" + j, _fpi[i][j-4], Crimson);
 			else
-				setTextObj("table_body_row_" + i + "_col_" + j, _fpi[i][j-4], SteelBlue);
+				setTextObj("table_body_row_" + i + "_col_" + j, _fpi[i][j-4]);
 		}
 	}
 }
@@ -244,27 +243,132 @@ void setTextObj(string objName, string objText="", color fontcolor=White, string
 //-- get FPI indicator
 void getFPI(double &_fpi[][])
 {
-	RefreshRates();
+	double _price[4];
 
 	for(int i = 1; i < 15; i ++)
 	{
+		RefreshRates();
+
+		_price[1] = MarketInfo(Ring[i][1], MODE_ASK);
+		_price[2] = MarketInfo(Ring[i][2], MODE_BID);
+		_price[3] = MarketInfo(Ring[i][3], MODE_BID);
 		//-- buy fpi
-		_fpi[i][1] = MarketInfo(Ring[i][1], MODE_ASK) / (MarketInfo(Ring[i][2], MODE_BID) * MarketInfo(Ring[i][3], MODE_BID));
+		_fpi[i][1] = _price[1] / (_price[2] * _price[3]);
 		//-- buy FPI history
-		if(_fpi[i][2]==0 || _fpi[i][1]>_fpi[i][2]) _fpi[i][2] = _fpi[i][1];
-		if(_fpi[i][3]==0 || _fpi[i][1]<_fpi[i][3]) _fpi[i][3] = _fpi[i][1];
+		if(_fpi[i][2]==0 || _fpi[i][1]<_fpi[i][2]) _fpi[i][2] = _fpi[i][1];
+		//-- check buy chance
+		/*if()
+		{
+			openRing(0, i, _price, _fpi[i][1]);
+		}*/
 
+		_price[1] = MarketInfo(Ring[i][1], MODE_BID);
+		_price[2] = MarketInfo(Ring[i][2], MODE_ASK);
+		_price[3] = MarketInfo(Ring[i][3], MODE_ASK);
 		//-- sell fpi
-		_fpi[i][4] = MarketInfo(Ring[i][1], MODE_BID) / (MarketInfo(Ring[i][2], MODE_ASK) * MarketInfo(Ring[i][3], MODE_ASK));
+		_fpi[i][3] = _price[1] / (_price[2] * _price[3]);
 		//-- sell FPI history
-		if(_fpi[i][5]==0 || _fpi[i][4]>_fpi[i][5]) _fpi[i][5] = _fpi[i][4];
-		if(_fpi[i][6]==0 || _fpi[i][4]<_fpi[i][6]) _fpi[i][6] = _fpi[i][4];
-
-		//-- spread
-		//_fpi[i][7] = MarketInfo(Ring[i][1], MODE_SPREAD) + MarketInfo(Ring[i][2], MODE_SPREAD) + MarketInfo(Ring[i][3], MODE_SPREAD);
+		if(_fpi[i][4]==0 || _fpi[i][3]>_fpi[i][4]) _fpi[i][4] = _fpi[i][3];
+		//-- check sell chance
+		/*if()
+		{
+			openRing(1, i, _price, _fpi[i][3]);
+		}*/
 	}
 }
 
+//-- open ring _direction = 0(buy)/1(sell)
+bool openRing(int _direction, int _index, double _price[], double _fpi)
+{
+	/*bool status = true;
+	string commentText = "";
+	int b_c_orderType;*/
+
+	int ticketno[4], b_c_direction, i, limit_direction;
+	double c_lots;
+	
+	//-- adjust b c order direction
+	if(_direction==0)
+	{
+		b_c_direction = 1;
+		commentText = "B@" + _fpi;
+	}
+	else if(_direction==1)
+	{
+		b_c_direction = 0;
+		commentText = "S@" + _fpi;
+	}
+	//-- calculate last symbol order losts
+	c_lots = NormalizeDouble(BaseLots * _price[2], 2);
+
+	//-- open order a
+	ticketno[1] = OrderSend(Ring[_index][1], _direction, BaseLots, _price[1], 0, 0, 0, commentText, MagicNumber);
+	if(ticketno[1] <= 0)
+	{
+		if(_direction==0 && MarketInfo(Ring[_index][1], MODE_ASK) < _price[1])
+			ticketno[1] = OrderSend(Ring[_index][1], _direction, BaseLots, MarketInfo(Ring[_index][1], MODE_ASK), 0, 0, 0, commentText, MagicNumber);
+		else if(_direction==1 && MarketInfo(Ring[_index][1], MODE_BID) > _price[1])
+			ticketno[1] = OrderSend(Ring[_index][1], _direction, BaseLots, MarketInfo(Ring[_index][1], MODE_BID), 0, 0, 0, commentText, MagicNumber);
+	}
+	if(ticketno[1] > 0)
+		outputLog("nst_ta - First order opened. [" + Ring[_index][1] + "]", "Trading info");
+	else
+	{
+		outputLog("nst_ta - First order can not be send. cancel ring. [" + Ring[_index][1] + "][" + GetLastError() + "]", "Trading error");
+		//-- exit openRing func
+		return(false);
+	}
+
+	//-- open order b
+	ticketno[2] = OrderSend(Ring[_index][2], b_c_direction, BaseLots, _price[2], 0, 0, 0, commentText, MagicNumber);
+	if(ticketno[2] <= 0)
+	{
+		if(b_c_direction==0 && MarketInfo(Ring[_index][2], MODE_ASK) < _price[2])
+			ticketno[2] = OrderSend(Ring[_index][2], _direction, BaseLots, MarketInfo(Ring[_index][2], MODE_ASK), 0, 0, 0, commentText, MagicNumber);
+		else if(b_c_direction==1 && MarketInfo(Ring[_index][2], MODE_BID) > _price[2])
+			ticketno[2] = OrderSend(Ring[_index][2], _direction, BaseLots, MarketInfo(Ring[_index][2], MODE_BID), 0, 0, 0, commentText, MagicNumber);
+	}
+	if(ticketno[2] > 0)
+		outputLog("nst_ta - Second order opened. [" + Ring[_index][2] + "]", "Trading info");
+	else
+	{
+		outputLog("nst_ta - Second order can not be send. open limit order. [" + Ring[_index][2] + "][" + GetLastError() + "]", "Trading error");
+
+		limit_direction = b_c_direction + 2;
+
+		ticketno[2] = OrderSend(Ring[_index][2], limit_direction, BaseLots, _price[2], 0, 0, 0, commentText, MagicNumber);
+		if(ticketno[2] > 0)
+			outputLog("nst_ta - Second limit order opened. [" + Ring[_index][2] + "]", "Trading info");
+		else
+			outputLog("nst_ta - Second limit order can not be send. [" + Ring[_index][2] + "][" + GetLastError() + "]", "Trading error");
+	}
+
+	//-- open order c
+	ticketno[3] = OrderSend(Ring[_index][3], b_c_direction, c_lots, _price[3], 0, 0, 0, commentText, MagicNumber);
+	if(ticketno[3] <= 0)
+	{
+		if(b_c_direction==0 && MarketInfo(Ring[_index][3], MODE_ASK) < _price[3])
+			ticketno[3] = OrderSend(Ring[_index][3], _direction, c_lots, MarketInfo(Ring[_index][3], MODE_ASK), 0, 0, 0, commentText, MagicNumber);
+		else if(b_c_direction==1 && MarketInfo(Ring[_index][3], MODE_BID) > _price[3])
+			ticketno[3] = OrderSend(Ring[_index][3], _direction, c_lots, MarketInfo(Ring[_index][3], MODE_BID), 0, 0, 0, commentText, MagicNumber);
+	}
+	if(ticketno[3] > 0)
+		outputLog("nst_ta - Second order opened. [" + Ring[_index][3] + "]", "Trading info");
+	else
+	{
+		outputLog("nst_ta - Second order can not be send. open limit order. [" + Ring[_index][3] + "][" + GetLastError() + "]", "Trading error");
+
+		limit_direction = b_c_direction + 2;
+		
+		ticketno[3] = OrderSend(Ring[_index][3], limit_direction, c_lots, _price[3], 0, 0, 0, commentText, MagicNumber);
+		if(ticketno[3] > 0)
+			outputLog("nst_ta - Second limit order opened. [" + Ring[_index][3] + "]", "Trading info");
+		else
+			outputLog("nst_ta - Second limit order can not be send. [" + Ring[_index][3] + "][" + GetLastError() + "]", "Trading error");
+	}
+
+	return(true);
+}
 
 
 
