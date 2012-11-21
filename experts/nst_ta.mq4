@@ -27,6 +27,7 @@
  * v0.1.1  [dev] 2012-11-20 finished calcu fpi indicator and show it on chart;
  * v0.1.2  [dev] 2012-11-20 finished new openRing() func, if price change than open limit order;
  * v0.1.3  [dev] 2012-11-20 finished the open order and check trade chance, no grammar error but not test yet;
+ * v0.1.4  [dev] 2012-11-21 fix a trade thold bug, add "get price without stop";
  * 
  * @Todo
  */
@@ -43,13 +44,14 @@
  *
  */
 
-extern string ControlTrade  = "---------Control Trade--------";
-extern bool 	EnableTrade 	= false;
+extern string 	ControlTrade  = "---------Trade Setting--------";
+extern bool 	EnableTrade 	= true;
 extern bool 	Superaddition	= false;
 extern double 	BaseLots    	= 0.5;
 extern int 		MagicNumber 	= 99901;
-extern string MoneyMangment = "---------Money Mangment(not complete)---------";
-extern bool   EnableMM 		= false;
+extern double 	BuyThold		= 0.9999;
+extern double 	SellThold 		= 1.0001;
+
 
 
 /* 
@@ -113,9 +115,12 @@ int start()
 {
 	checkCurrentOrder(RingOrd);
 
-	getFPI(FPI);
+	while(true)
+	{
+		getFPI(FPI);
 
-	updateDubugInfo(FPI);
+		updateDubugInfo(FPI);
+	}
 
 	return(0);
 }
@@ -189,7 +194,7 @@ void initDebugInfo(string _ring[][])
 	}
 
 	y += 15 * 2;
-	createTextObj("table_header_col_1", 25,	y, "Ring", White);
+	createTextObj("ring_title", 25,	y, "Ring", White);
 }
 
 //--  update new debug info to chart
@@ -252,7 +257,7 @@ void getFPI(double &_fpi[][])
 		//-- buy fpi
 		_fpi[i][1] = _price[1] / (_price[2] * _price[3]);
 		//-- check buy chance
-		if(_fpi[i][1] < 0.9995 && EnableTrade == true && (RingOrd[i][0] == 0 || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
+		if(_fpi[i][1] < BuyThold && EnableTrade == true && (RingOrd[i][0] == 0 || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
 		{
 			openRing(0, i, _price, _fpi[i][1]);
 		}
@@ -266,7 +271,7 @@ void getFPI(double &_fpi[][])
 		//-- sell fpi
 		_fpi[i][3] = _price[1] / (_price[2] * _price[3]);
 		//-- check sell chance
-		if(_fpi[i][1] < 0.9995 && EnableTrade == true && (RingOrd[i][0] == 0 || (Superaddition == true && _fpi[i][1] >= RingOrd[i][1] + 0.0005)))
+		if(_fpi[i][3] > SellThold && EnableTrade == true && (RingOrd[i][0] == 0 || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
 		{
 			openRing(1, i, _price, _fpi[i][3]);
 		}
@@ -279,10 +284,8 @@ void getFPI(double &_fpi[][])
 //-- open ring _direction = 0(buy)/1(sell)
 bool openRing(int _direction, int _index, double _price[], double _fpi)
 {
-   string commentText;
 	int ticketno[4];
 	int b_c_direction, i, limit_direction;
-	double c_lots;
 	
 	//-- adjust b c order direction
 	if(_direction==0)
@@ -291,10 +294,10 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 		b_c_direction = 0;
 
 	//-- make comment string
-	commentText = _index + "|" + _direction + "@" + _fpi;
+	string commentText = _index + "|" + _direction + "@" + _fpi;
 
 	//-- calculate last symbol order losts
-	c_lots = NormalizeDouble(BaseLots * _price[2], 2);
+	double c_lots = NormalizeDouble(BaseLots * _price[2], 2);
 
 	//-- open order a
 	ticketno[1] = OrderSend(Ring[_index][1], _direction, BaseLots, _price[1], 0, 0, 0, commentText, MagicNumber);
