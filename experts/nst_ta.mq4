@@ -193,8 +193,30 @@ void initDebugInfo(string _ring[][])
 		}
 	}
 
+	//-- settings info
+	string status = "Disable";
 	y += 15 * 2;
-	createTextObj("ring_title", 25,	y, "Ring", White);
+	createTextObj("setting_header", 25,	y, "Settings");
+	y += 15;
+	createTextObj("setting_body_row_1_col_1", 25,	y, "Trade:");
+	if(EnableTrade==true)
+		status = "Enable";
+	createTextObj("setting_body_row_1_col_2", 70,	y, status, White);
+
+	createTextObj("setting_body_row_1_col_3", 120,	y, "Superaddition:");
+	status = "Disable";
+	if(Superaddition==true)
+		status = "Enable";
+	createTextObj("setting_body_row_1_col_4", 220,	y, status, White);
+
+	createTextObj("setting_body_row_1_col_5", 280,	y, "BaseLots:");
+	createTextObj("setting_body_row_1_col_6", 350,	y, DoubleToStr(BaseLots, 2), White);
+
+	createTextObj("setting_body_row_1_col_7", 400,	y, "bThold:");
+	createTextObj("setting_body_row_1_col_8", 450,	y, DoubleToStr(BuyThold, 4), White);
+
+	createTextObj("setting_body_row_1_col_9", 500,	y, "sThold:");
+	createTextObj("setting_body_row_1_col_10", 550,	y, DoubleToStr(SellThold, 4), White);
 }
 
 //--  update new debug info to chart
