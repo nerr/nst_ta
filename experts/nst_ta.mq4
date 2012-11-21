@@ -188,7 +188,7 @@ void initDebugInfo(string _ring[][])
 
 	//-- broker price table header
 	y += 15;
-	createTextObj("price_header", 25,	y, "Price");
+	createTextObj("price_header", 25,	y, "Price", titlecolor);
 	y += 15;
 	createTextObj("price_header_col_1", 25,	y, "Serial");
 	createTextObj("price_header_col_2", 75, y, "SymbolA");
@@ -219,7 +219,7 @@ void initDebugInfo(string _ring[][])
 	//-- settings info
 	string status = "Disable";
 	y += 15 * 2;
-	createTextObj("setting_header", 25,	y, "Settings");
+	createTextObj("setting_header", 25,	y, "Settings", titlecolor);
 	y += 15;
 	createTextObj("setting_body_row_1_col_1", 25,	y, "Trade:");
 	if(EnableTrade==true)
@@ -243,7 +243,7 @@ void initDebugInfo(string _ring[][])
 
 	//-- ring info
 	y += 15 * 2;
-	createTextObj("ring_header", 25,	y, "Ring");
+	createTextObj("ring_header", 25,	y, "Ring", titlecolor);
 }
 
 //--  update new debug info to chart
