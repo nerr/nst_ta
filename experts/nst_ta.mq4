@@ -28,6 +28,8 @@
  * v0.1.2  [dev] 2012-11-20 finished new openRing() func, if price change than open limit order;
  * v0.1.3  [dev] 2012-11-20 finished the open order and check trade chance, no grammar error but not test yet;
  * v0.1.4  [dev] 2012-11-21 fix a trade thold bug, add "get price without stop";
+ * v0.1.5  [dev] 2012-11-21 add settings information to chart;
+ * v0.1.6  [dev] 2012-11-21 add extern item "LotsDigit" default value is 2, but some account allow 1 digit only; fix third order log output text;
  * 
  * @Todo
  */
@@ -44,13 +46,15 @@
  *
  */
 
-extern string 	ControlTrade  = "---------Trade Setting--------";
+extern string 	TradeSetting 	= "---------Trade Setting--------";
 extern bool 	EnableTrade 	= true;
 extern bool 	Superaddition	= false;
 extern double 	BaseLots    	= 0.5;
 extern int 		MagicNumber 	= 99901;
 extern double 	BuyThold		= 0.9999;
 extern double 	SellThold 		= 1.0001;
+extern string 	BrokerSetting 	= "---------Broker Setting--------";
+extern int 		LotsDigit 		= 2;
 
 
 
@@ -115,11 +119,14 @@ int start()
 {
 	checkCurrentOrder(RingOrd);
 
-	while(true)
+	int i = 0;
+	while(i<20)
 	{
 		getFPI(FPI);
 
 		updateDubugInfo(FPI);
+
+		i++;
 	}
 
 	return(0);
@@ -150,31 +157,47 @@ void sendAlert(string _text = "null")
 //-- init debug info object on chart
 void initDebugInfo(string _ring[][])
 {
+	color bgcolor = C'0x27,0x28,0x22';
+	color titlecolor = C'0xd9,0x26,0x59';
 	int y = 0;
 
 	//-- background
 	ObjectCreate("background_1", OBJ_LABEL, 0, 0, 0);
-	ObjectSetText("background_1", "g", 300, "Webdings", DarkGreen);
+	ObjectSetText("background_1", "g", 300, "Webdings", bgcolor);
 	ObjectSet("background_1", OBJPROP_BACK, false);
 	ObjectSet("background_1", OBJPROP_XDISTANCE, 20);
 	ObjectSet("background_1", OBJPROP_YDISTANCE, 13);
 
 	ObjectCreate("background_2", OBJ_LABEL, 0, 0, 0);
-	ObjectSetText("background_2", "g", 300, "Webdings", DarkGreen);
+	ObjectSetText("background_2", "g", 300, "Webdings", bgcolor);
 	ObjectSet("background_2", OBJPROP_BACK, false);
 	ObjectSet("background_2", OBJPROP_XDISTANCE, 420);
 	ObjectSet("background_2", OBJPROP_YDISTANCE, 13);
 
+	ObjectCreate("background_3", OBJ_LABEL, 0, 0, 0);
+	ObjectSetText("background_3", "g", 300, "Webdings", bgcolor);
+	ObjectSet("background_3", OBJPROP_BACK, false);
+	ObjectSet("background_3", OBJPROP_XDISTANCE, 20);
+	ObjectSet("background_3", OBJPROP_YDISTANCE, 410);
+
+	ObjectCreate("background_4", OBJ_LABEL, 0, 0, 0);
+	ObjectSetText("background_4", "g", 300, "Webdings", bgcolor);
+	ObjectSet("background_4", OBJPROP_BACK, false);
+	ObjectSet("background_4", OBJPROP_XDISTANCE, 420);
+	ObjectSet("background_4", OBJPROP_YDISTANCE, 410);
+
 	//-- broker price table header
 	y += 15;
-	createTextObj("table_header_col_1", 25,	y, "Ring");
-	createTextObj("table_header_col_2", 75, y, "SymbolA");
-	createTextObj("table_header_col_3", 145,y, "SymbolB");
-	createTextObj("table_header_col_4", 215,y, "SymbolC");
-	createTextObj("table_header_col_5", 285,y, "bFPI");
-	createTextObj("table_header_col_6", 375,y, "bLowest");
-	createTextObj("table_header_col_7", 465,y, "sFPI");
-	createTextObj("table_header_col_8", 555,y, "sHighest");
+	createTextObj("price_header", 25,	y, "Price");
+	y += 15;
+	createTextObj("price_header_col_1", 25,	y, "Serial");
+	createTextObj("price_header_col_2", 75, y, "SymbolA");
+	createTextObj("price_header_col_3", 145,y, "SymbolB");
+	createTextObj("price_header_col_4", 215,y, "SymbolC");
+	createTextObj("price_header_col_5", 285,y, "bFPI");
+	createTextObj("price_header_col_6", 375,y, "bLowest");
+	createTextObj("price_header_col_7", 465,y, "sFPI");
+	createTextObj("price_header_col_8", 555,y, "sHighest");
 
 	//-- broker price table body
 	for(int i = 1; i < 15; i ++)
@@ -182,14 +205,14 @@ void initDebugInfo(string _ring[][])
 		y += 15;
 		for (int j = 1; j < 4; j ++) 
 		{
-			createTextObj("table_body_row_" + i + "_col_1", 25,	y, i, Gray);
-			createTextObj("table_body_row_" + i + "_col_2", 75,	y, _ring[i,1], White);
-			createTextObj("table_body_row_" + i + "_col_3", 145,y, _ring[i,2], White);
-			createTextObj("table_body_row_" + i + "_col_4", 215,y, _ring[i,3], White);
-			createTextObj("table_body_row_" + i + "_col_5", 285,y);
-			createTextObj("table_body_row_" + i + "_col_6", 375,y);
-			createTextObj("table_body_row_" + i + "_col_7", 465,y);
-			createTextObj("table_body_row_" + i + "_col_8", 555,y);
+			createTextObj("price_body_row_" + i + "_col_1", 25,	y, i, Gray);
+			createTextObj("price_body_row_" + i + "_col_2", 75,	y, _ring[i,1], White);
+			createTextObj("price_body_row_" + i + "_col_3", 145,y, _ring[i,2], White);
+			createTextObj("price_body_row_" + i + "_col_4", 215,y, _ring[i,3], White);
+			createTextObj("price_body_row_" + i + "_col_5", 285,y);
+			createTextObj("price_body_row_" + i + "_col_6", 375,y);
+			createTextObj("price_body_row_" + i + "_col_7", 465,y);
+			createTextObj("price_body_row_" + i + "_col_8", 555,y);
 		}
 	}
 
@@ -217,6 +240,10 @@ void initDebugInfo(string _ring[][])
 
 	createTextObj("setting_body_row_1_col_9", 500,	y, "sThold:");
 	createTextObj("setting_body_row_1_col_10", 550,	y, DoubleToStr(SellThold, 4), White);
+
+	//-- ring info
+	y += 15 * 2;
+	createTextObj("ring_header", 25,	y, "Ring");
 }
 
 //--  update new debug info to chart
@@ -229,9 +256,9 @@ void updateDubugInfo(double _fpi[][])
 		for(int j = 5; j < 9; j++)
 		{
 			if(j==5 || j==7)
-				setTextObj("table_body_row_" + i + "_col_" + j, _fpi[i][j-4], DeepSkyBlue);
+				setTextObj("price_body_row_" + i + "_col_" + j, _fpi[i][j-4], DeepSkyBlue);
 			else
-				setTextObj("table_body_row_" + i + "_col_" + j, _fpi[i][j-4]);
+				setTextObj("price_body_row_" + i + "_col_" + j, _fpi[i][j-4]);
 		}
 	}
 }
@@ -319,7 +346,7 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 	string commentText = _index + "|" + _direction + "@" + _fpi;
 
 	//-- calculate last symbol order losts
-	double c_lots = NormalizeDouble(BaseLots * _price[2], 2);
+	double c_lots = NormalizeDouble(BaseLots * _price[2], LotsDigit);
 
 	//-- open order a
 	ticketno[1] = OrderSend(Ring[_index][1], _direction, BaseLots, _price[1], 0, 0, 0, commentText, MagicNumber);
@@ -373,18 +400,18 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 			ticketno[3] = OrderSend(Ring[_index][3], _direction, c_lots, MarketInfo(Ring[_index][3], MODE_BID), 0, 0, 0, commentText, MagicNumber);
 	}
 	if(ticketno[3] > 0)
-		outputLog("nst_ta - Second order opened. [" + Ring[_index][3] + "]", "Trading info");
+		outputLog("nst_ta - Third order opened. [" + Ring[_index][3] + "]", "Trading info");
 	else
 	{
-		outputLog("nst_ta - Second order can not be send. open limit order. [" + Ring[_index][3] + "][" + GetLastError() + "]", "Trading error");
+		outputLog("nst_ta - Third order can not be send. open limit order. [" + Ring[_index][3] + "][" + GetLastError() + "]", "Trading error");
 
 		limit_direction = b_c_direction + 2;
 		
 		ticketno[3] = OrderSend(Ring[_index][3], limit_direction, c_lots, _price[3], 0, 0, 0, commentText, MagicNumber);
 		if(ticketno[3] > 0)
-			outputLog("nst_ta - Second limit order opened. [" + Ring[_index][3] + "]", "Trading info");
+			outputLog("nst_ta - Third limit order opened. [" + Ring[_index][3] + "]", "Trading info");
 		else
-			outputLog("nst_ta - Second limit order can not be send. [" + Ring[_index][3] + "][" + GetLastError() + "]", "Trading error");
+			outputLog("nst_ta - Third limit order can not be send. [" + Ring[_index][3] + "][" + GetLastError() + "]", "Trading error");
 	}
 
 	return(true);
