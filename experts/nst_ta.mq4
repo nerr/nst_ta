@@ -30,6 +30,8 @@
  * v0.1.4  [dev] 2012-11-21 fix a trade thold bug, add "get price without stop";
  * v0.1.5  [dev] 2012-11-21 add settings information to chart;
  * v0.1.6  [dev] 2012-11-21 add extern item "LotsDigit" default value is 2, but some account allow 1 digit only; fix third order log output text;
+ * v0.1.7  [dev] 2012-11-21 change debug object style;
+ * v0.1.8  [dev] 2012-11-21 add updateSettingInfo() func;
  * 
  * @Todo
  */
@@ -129,6 +131,8 @@ int start()
 		i++;
 	}
 
+	updateSettingInfo();
+
 	return(0);
 }
 
@@ -188,7 +192,7 @@ void initDebugInfo(string _ring[][])
 
 	//-- broker price table header
 	y += 15;
-	createTextObj("price_header", 25,	y, "Price", titlecolor);
+	createTextObj("price_header", 25,	y, ">>>Price", titlecolor);
 	y += 15;
 	createTextObj("price_header_col_1", 25,	y, "Serial");
 	createTextObj("price_header_col_2", 75, y, "SymbolA");
@@ -217,33 +221,23 @@ void initDebugInfo(string _ring[][])
 	}
 
 	//-- settings info
-	string status = "Disable";
 	y += 15 * 2;
-	createTextObj("setting_header", 25,	y, "Settings", titlecolor);
+	createTextObj("setting_header", 25,	y, ">>>Settings", titlecolor);
 	y += 15;
 	createTextObj("setting_body_row_1_col_1", 25,	y, "Trade:");
-	if(EnableTrade==true)
-		status = "Enable";
-	createTextObj("setting_body_row_1_col_2", 70,	y, status, White);
-
-	createTextObj("setting_body_row_1_col_3", 120,	y, "Superaddition:");
-	status = "Disable";
-	if(Superaddition==true)
-		status = "Enable";
-	createTextObj("setting_body_row_1_col_4", 220,	y, status, White);
-
-	createTextObj("setting_body_row_1_col_5", 280,	y, "BaseLots:");
-	createTextObj("setting_body_row_1_col_6", 350,	y, DoubleToStr(BaseLots, 2), White);
-
-	createTextObj("setting_body_row_1_col_7", 400,	y, "bThold:");
-	createTextObj("setting_body_row_1_col_8", 450,	y, DoubleToStr(BuyThold, 4), White);
-
-	createTextObj("setting_body_row_1_col_9", 500,	y, "sThold:");
-	createTextObj("setting_body_row_1_col_10", 550,	y, DoubleToStr(SellThold, 4), White);
+	createTextObj("setting_body_row_1_col_2", 70,	y);
+	createTextObj("setting_body_row_1_col_3", 125,	y, "Superaddition:");
+	createTextObj("setting_body_row_1_col_4", 225,	y);
+	createTextObj("setting_body_row_1_col_5", 285,	y, "BaseLots:");
+	createTextObj("setting_body_row_1_col_6", 355,	y);
+	createTextObj("setting_body_row_1_col_7", 405,	y, "bThold:");
+	createTextObj("setting_body_row_1_col_8", 455,	y);
+	createTextObj("setting_body_row_1_col_9", 525,	y, "sThold:");
+	createTextObj("setting_body_row_1_col_10",575,	y);
 
 	//-- ring info
 	y += 15 * 2;
-	createTextObj("ring_header", 25,	y, "Ring", titlecolor);
+	createTextObj("ring_header", 25,	y, ">>>Ring", titlecolor);
 }
 
 //--  update new debug info to chart
@@ -261,6 +255,24 @@ void updateDubugInfo(double _fpi[][])
 				setTextObj("price_body_row_" + i + "_col_" + j, _fpi[i][j-4]);
 		}
 	}
+}
+
+//--  update Setting info to chart
+void updateSettingInfo()
+{
+	string settingstatus = "Disable";
+	if(EnableTrade==true)
+		settingstatus = "Enable";
+	setTextObj("setting_body_row_1_col_2", settingstatus);
+	
+	settingstatus = "Disable";
+	if(Superaddition==true)
+		settingstatus = "Enable";
+	setTextObj("setting_body_row_1_col_4", settingstatus);
+	
+	setTextObj("setting_body_row_1_col_6", DoubleToStr(BaseLots, LotsDigit));
+	setTextObj("setting_body_row_1_col_8", DoubleToStr(BuyThold, 4));
+	setTextObj("setting_body_row_1_col_10",DoubleToStr(SellThold, 4));
 }
 
 //-- create text object
@@ -416,6 +428,13 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 
 	return(true);
 }
+
+
+
+/*
+ * Order management funcs
+ *
+ */
 
 //-- check current order
 void checkCurrentOrder(double &_ringord[][])
