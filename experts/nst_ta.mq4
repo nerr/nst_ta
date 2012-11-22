@@ -33,7 +33,8 @@
  * v0.1.7  [dev] 2012-11-21 change debug object style;
  * v0.1.8  [dev] 2012-11-21 add updateSettingInfo() func;
  * v0.1.9  [dev] 2012-11-22 add checkUnavailableSymbol() func use to self-adaption current support symbol; add 6 new ring;
- * 
+ * v0.1.10 [dev] 2012-11-22 finished auto get all ring of current broker;
+ * v0.1.11 [dev] 2012-11-22 add extern item "Currencies" use to custum currency whitch user want it;
  * @Todo
  */
 
@@ -58,6 +59,7 @@ extern double 	BuyThold		= 0.9999;
 extern double 	SellThold 		= 1.0001;
 extern string 	BrokerSetting 	= "---------Broker Setting--------";
 extern int 		LotsDigit 		= 2;
+extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|";
 
 
 
@@ -66,7 +68,7 @@ extern int 		LotsDigit 		= 2;
  *
  */
 
-string Ring[1,4], SymExt;
+string Ring[200,4], SymExt;
 double FPI[1,5], RingOrd[1, 3];
 int ringnum;
 
@@ -81,41 +83,10 @@ int ringnum;
 int init()
 {
 	
-	int i, j, n;
+	int i, j;
 
-	//-- Set up rings
-	string ring[29, 4];
-	//-- Set up rings
-	ring[ 1,1] = "EURCHF"; ring[ 1,2] = "EURUSD"; ring[ 1,3] = "USDCHF";
-	ring[ 2,1] = "EURCHF"; ring[ 2,2] = "EURGBP"; ring[ 2,3] = "GBPCHF";
-	ring[ 3,1] = "EURJPY"; ring[ 3,2] = "EURAUD"; ring[ 3,3] = "AUDJPY";
-	ring[ 4,1] = "EURJPY"; ring[ 4,2] = "EURCHF"; ring[ 4,3] = "CHFJPY";
-	ring[ 5,1] = "EURJPY"; ring[ 5,2] = "EURGBP"; ring[ 5,3] = "GBPJPY";
-	ring[ 6,1] = "EURJPY"; ring[ 6,2] = "EURUSD"; ring[ 6,3] = "USDJPY";
-	ring[ 7,1] = "EURCAD"; ring[ 7,2] = "EURUSD"; ring[ 7,3] = "USDCAD";
-	ring[ 8,1] = "EURUSD"; ring[ 8,2] = "EURAUD"; ring[ 8,3] = "AUDUSD";
-	ring[ 9,1] = "EURUSD"; ring[ 9,2] = "EURGBP"; ring[ 9,3] = "GBPUSD";
-	ring[10,1] = "GBPJPY"; ring[10,2] = "GBPCHF"; ring[10,3] = "CHFJPY";
-	ring[11,1] = "GBPJPY"; ring[11,2] = "GBPUSD"; ring[11,3] = "USDJPY";
-	ring[12,1] = "GBPCHF"; ring[12,2] = "GBPUSD"; ring[12,3] = "USDCHF";
-	ring[13,1] = "AUDJPY"; ring[13,2] = "AUDUSD"; ring[13,3] = "USDJPY";
-	ring[14,1] = "USDJPY"; ring[14,2] = "USDCHF"; ring[14,3] = "CHFJPY";
-	ring[15,1] = "EURUSD"; ring[15,2] = "EURNZD"; ring[15,3] = "NZDUSD";
-	ring[16,1] = "EURCHF"; ring[16,2] = "EURNZD"; ring[16,3] = "NZDCHF";
-	ring[17,1] = "EURSGD"; ring[17,2] = "EURGBP"; ring[17,3] = "GBPSGD";
-	ring[18,1] = "NZDCAD"; ring[18,2] = "NZDUSD"; ring[18,3] = "USDCAD";
-	ring[19,1] = "EURNZD"; ring[19,2] = "EURGBP"; ring[19,3] = "GBPNZD";
-	ring[20,1] = "AUDUSD"; ring[20,2] = "AUDNZD"; ring[20,3] = "NZDUSD";
-	ring[21,1] = "USDJPY"; ring[21,2] = "USDCAD"; ring[21,3] = "CADJPY"; //-- cadjpy
-	ring[22,1] = "EURJPY"; ring[22,2] = "EURCAD"; ring[22,3] = "CADJPY";
-	ring[23,1] = "GBPJPY"; ring[23,2] = "GBPCAD"; ring[23,3] = "CADJPY";
-	ring[24,1] = "AUDJPY"; ring[24,2] = "AUDCAD"; ring[24,3] = "CADJPY";
-	ring[25,1] = "EURCHF"; ring[25,2] = "EURCAD"; ring[25,3] = "CADCHF"; //-- cafchf
-	ring[26,1] = "USDCHF"; ring[26,2] = "USDCAD"; ring[26,3] = "CADCHF";
-	ring[27,1] = "GBPCHF"; ring[27,2] = "GBPCAD"; ring[27,3] = "CADCHF";
-	ring[28,1] = "AUDCHF"; ring[28,2] = "AUDCAD"; ring[28,3] = "CADCHF";
-
-	checkUnavailableSymbol(ring, Ring, ringnum);
+	//-- get rings
+	findAvailableRing(Ring);
 
 	//-- adjust real array size
 	ringnum = ArrayRange(Ring, 0);
@@ -123,7 +94,7 @@ int init()
 	ArrayResize(RingOrd, ringnum);
 
 	//-- Fix Symbol Names for all Brokers
-	if(StringLen(Symbol()) > 6)                                               
+	if(StringLen(Symbol()) > 6)
 	{
 		SymExt = StringSubstr(Symbol(),6);
 		for(i = 1; i < ringnum; i ++)
@@ -220,7 +191,7 @@ void initDebugInfo(string _ring[][])
 
 	//-- broker price table header
 	y += 15;
-	createTextObj("price_header", 25,	y, ">>>Price", titlecolor);
+	createTextObj("price_header", 25,	y, ">>>Ring(" + ringnum + ") & Price & FPI", titlecolor);
 	y += 15;
 	createTextObj("price_header_col_1", 25,	y, "Serial");
 	createTextObj("price_header_col_2", 75, y, "SymbolA");
@@ -354,6 +325,66 @@ void checkUnavailableSymbol(string _ring[][], string &_Ring[][], int _ringnum)
 
 	_ringnum++;
 	ArrayResize(_Ring, _ringnum);
+}
+
+//-- find available rings
+string findAvailableRing(string &_ring[][])
+{
+	string avasymbols[100][2];
+	findAvailableSymbol(avasymbols);
+
+	int symbolnum = ArrayRange(avasymbols, 0);
+
+	int i, j;
+	int n = 1;
+	for(i = 0; i < symbolnum; i++)
+	{
+		for(j = 0; j < symbolnum; j++)
+		{
+			if(i != j && avasymbols[i][0] == avasymbols[j][0] && avasymbols[i][1] != avasymbols[j][1])
+			{
+				if(MarketInfo(avasymbols[j][1] + avasymbols[i][1], MODE_ASK) > 0)
+				{
+					_ring[n][1] = avasymbols[i][0] + avasymbols[i][1];
+					_ring[n][2] = avasymbols[j][0] + avasymbols[j][1];
+					_ring[n][3] = avasymbols[j][1] + avasymbols[i][1];
+					n++;
+				}
+			}
+		}
+	}
+	ArrayResize(_ring, n);
+}
+
+//-- find available symbols
+string findAvailableSymbol(string &_symbols[][])
+{
+	int currencynum = StringLen(Currencies) / 4;
+	string currencyarr[100];
+	ArrayResize(currencyarr, currencynum);
+
+	int i, j, n;
+	//-- make currency array
+	for(i = 0; i < currencynum; i++)
+		currencyarr[i] = StringSubstr(Currencies, i * 4, 3);
+	//-- check available symbol
+	for(i = 0; i < currencynum; i++)
+	{
+		for(j = 0; j < currencynum; j++)
+		{
+			if(i != j)
+			{
+				if(MarketInfo(currencyarr[i]+currencyarr[j], MODE_ASK) > 0)
+				{
+					_symbols[n][0] = currencyarr[i];
+					_symbols[n][1] = currencyarr[j];
+					n++;
+				}
+			}
+		}
+	}
+	//-- resize array
+	ArrayResize(_symbols, n);
 }
 
 
