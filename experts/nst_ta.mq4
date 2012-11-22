@@ -32,6 +32,7 @@
  * v0.1.6  [dev] 2012-11-21 add extern item "LotsDigit" default value is 2, but some account allow 1 digit only; fix third order log output text;
  * v0.1.7  [dev] 2012-11-21 change debug object style;
  * v0.1.8  [dev] 2012-11-21 add updateSettingInfo() func;
+ * v0.1.9  [dev] 2012-11-22 add checkUnavailableSymbol() func use to self-adaption current support symbol;
  * 
  * @Todo
  */
@@ -65,8 +66,9 @@ extern int 		LotsDigit 		= 2;
  *
  */
 
-string Ring[15,4], SymExt;
-double FPI[15,5], RingOrd[15, 3];
+string Ring[1,4], SymExt;
+double FPI[1,5], RingOrd[1, 3];
+int ringnum;
 
 
 
@@ -78,29 +80,46 @@ double FPI[15,5], RingOrd[15, 3];
 //-- init
 int init()
 {
-	//-- Set up Rings
-	Ring[ 1,1] = "EURCHF"; Ring[ 1,2] = "EURUSD"; Ring[ 1,3] = "USDCHF";
-	Ring[ 2,1] = "EURCHF"; Ring[ 2,2] = "EURGBP"; Ring[ 2,3] = "GBPCHF";
-	Ring[ 3,1] = "EURJPY"; Ring[ 3,2] = "EURAUD"; Ring[ 3,3] = "AUDJPY";
-	Ring[ 4,1] = "EURJPY"; Ring[ 4,2] = "EURCHF"; Ring[ 4,3] = "CHFJPY";
-	Ring[ 5,1] = "EURJPY"; Ring[ 5,2] = "EURGBP"; Ring[ 5,3] = "GBPJPY";
-	Ring[ 6,1] = "EURJPY"; Ring[ 6,2] = "EURUSD"; Ring[ 6,3] = "USDJPY";
-	Ring[ 7,1] = "EURCAD"; Ring[ 7,2] = "EURUSD"; Ring[ 7,3] = "USDCAD";
-	Ring[ 8,1] = "EURUSD"; Ring[ 8,2] = "EURAUD"; Ring[ 8,3] = "AUDUSD";
-	Ring[ 9,1] = "EURUSD"; Ring[ 9,2] = "EURGBP"; Ring[ 9,3] = "GBPUSD";
-	Ring[10,1] = "GBPJPY"; Ring[10,2] = "GBPCHF"; Ring[10,3] = "CHFJPY";
-	Ring[11,1] = "GBPJPY"; Ring[11,2] = "GBPUSD"; Ring[11,3] = "USDJPY";
-	Ring[12,1] = "GBPCHF"; Ring[12,2] = "GBPUSD"; Ring[12,3] = "USDCHF";
-	Ring[13,1] = "AUDJPY"; Ring[13,2] = "AUDUSD"; Ring[13,3] = "USDJPY";
-	Ring[14,1] = "USDJPY"; Ring[14,2] = "USDCHF"; Ring[14,3] = "CHFJPY";
+	
+	int i, j, n;
+
+	//-- Set up rings
+	string ring[21, 4];
+	ring[ 1,1] = "EURCHF"; ring[ 1,2] = "EURUSD"; ring[ 1,3] = "USDCHF";
+	ring[ 2,1] = "EURCHF"; ring[ 2,2] = "EURGBP"; ring[ 2,3] = "GBPCHF";
+	ring[ 3,1] = "EURJPY"; ring[ 3,2] = "EURAUD"; ring[ 3,3] = "AUDJPY";
+	ring[ 4,1] = "EURJPY"; ring[ 4,2] = "EURCHF"; ring[ 4,3] = "CHFJPY";
+	ring[ 5,1] = "EURJPY"; ring[ 5,2] = "EURGBP"; ring[ 5,3] = "GBPJPY";
+	ring[ 6,1] = "EURJPY"; ring[ 6,2] = "EURUSD"; ring[ 6,3] = "USDJPY";
+	ring[ 7,1] = "EURCAD"; ring[ 7,2] = "EURUSD"; ring[ 7,3] = "USDCAD";
+	ring[ 8,1] = "EURUSD"; ring[ 8,2] = "EURAUD"; ring[ 8,3] = "AUDUSD";
+	ring[ 9,1] = "EURUSD"; ring[ 9,2] = "EURGBP"; ring[ 9,3] = "GBPUSD";
+	ring[10,1] = "GBPJPY"; ring[10,2] = "GBPCHF"; ring[10,3] = "CHFJPY";
+	ring[11,1] = "GBPJPY"; ring[11,2] = "GBPUSD"; ring[11,3] = "USDJPY";
+	ring[12,1] = "GBPCHF"; ring[12,2] = "GBPUSD"; ring[12,3] = "USDCHF";
+	ring[13,1] = "AUDJPY"; ring[13,2] = "AUDUSD"; ring[13,3] = "USDJPY";
+	ring[14,1] = "USDJPY"; ring[14,2] = "USDCHF"; ring[14,3] = "CHFJPY";
+	ring[15,1] = "EURUSD"; ring[15,2] = "EURNZD"; ring[15,3] = "NZDUSD";
+	ring[16,1] = "EURCHF"; ring[16,2] = "EURNZD"; ring[16,3] = "NZDCHF";
+	ring[17,1] = "EURSGD"; ring[17,2] = "EURGBP"; ring[17,3] = "GBPSGD";
+	ring[18,1] = "NZDCAD"; ring[18,2] = "NZDUSD"; ring[18,3] = "USDCAD";
+	ring[19,1] = "EURNZD"; ring[19,2] = "EURGBP"; ring[19,3] = "GBPNZD";
+	ring[20,1] = "AUDUSD"; ring[20,2] = "AUDNZD"; ring[20,3] = "NZDUSD";
+
+	checkUnavailableSymbol(ring, Ring, ringnum);
+
+	//-- adjust real array size
+	ringnum = ArrayRange(Ring, 0);
+	ArrayResize(FPI, ringnum);
+	ArrayResize(RingOrd, ringnum);
 
 	//-- Fix Symbol Names for all Brokers
 	if(StringLen(Symbol()) > 6)                                               
 	{
 		SymExt = StringSubstr(Symbol(),6);
-		for(int i = 1; i < 15; i ++)
+		for(i = 1; i < ringnum; i ++)
 		{
-			for(int j = 1; j < 4; j ++) 
+			for(j = 1; j < 4; j ++) 
 				Ring[i,j] = Ring[i,j] + SymExt;
 		}
 	}
@@ -204,7 +223,7 @@ void initDebugInfo(string _ring[][])
 	createTextObj("price_header_col_8", 555,y, "sHighest");
 
 	//-- broker price table body
-	for(int i = 1; i < 15; i ++)
+	for(int i = 1; i < ringnum; i ++)
 	{
 		y += 15;
 		for (int j = 1; j < 4; j ++) 
@@ -245,7 +264,7 @@ void updateDubugInfo(double _fpi[][])
 {
 	int digit = Digits;
 
-	for(int i = 1; i < 15; i++)	//-- row 5 to row 10
+	for(int i = 1; i < ringnum; i++)	//-- row 5 to row 10
 	{
 		for(int j = 5; j < 9; j++)
 		{
@@ -296,6 +315,38 @@ void setTextObj(string objName, string objText="", color fontcolor=White, string
 	}
 }
 
+//-- check unavailable symbol of current broker
+void checkUnavailableSymbol(string _ring[][], string &_Ring[][], int _ringnum)
+{
+	int range = ArrayRange(_ring, 0);
+	ArrayResize(_Ring, range);
+	_ringnum = 0;
+
+	//-- check unavailable symbol
+	for(int i = 1; i < range; i ++)
+	{
+		for(int j = 1; j < 4; j ++)
+		{
+			MarketInfo(_ring[i][j], MODE_ASK);
+			if(GetLastError() == 4106)
+			{
+				outputLog("This broker do not support symbol [" + _ring[i][j] + "]", "Information");
+				break;
+			}
+			if(j==3) 
+			{
+				_ringnum++;
+				_Ring[_ringnum][1] = _ring[i][1];
+				_Ring[_ringnum][2] = _ring[i][2];
+				_Ring[_ringnum][3] = _ring[i][3];
+			}
+		}
+	}
+
+	_ringnum++;
+	ArrayResize(_Ring, _ringnum);
+}
+
 
 
 /*
@@ -308,7 +359,7 @@ void getFPI(double &_fpi[][])
 {
 	double _price[4];
 
-	for(int i = 1; i < 15; i ++)
+	for(int i = 1; i < ringnum; i ++)
 	{
 		RefreshRates();
 
@@ -446,7 +497,7 @@ void checkCurrentOrder(double &_ringord[][])
 
 	if(total == 0)
 	{
-		for(i = 1; i < 15; i++)
+		for(i = 1; i < ringnum; i++)
 		{
 			_ringord[i][0] = 0; //-- order number of ring
 			_ringord[i][1] = 0; //-- order fpi of ring
