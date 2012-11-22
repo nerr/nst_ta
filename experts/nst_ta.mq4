@@ -36,6 +36,7 @@
  * v0.1.10 [dev] 2012-11-22 finished auto get all ring of current broker;
  * v0.1.11 [dev] 2012-11-22 add extern item "Currencies" use to custum currency whitch user want it;
  * v0.1.12 [dev] 2012-11-22 fix ring table header real ring number;
+ * v0.1.13 [dev] 2012-11-22 add col name "sH-bL" in ring table;
  *
  *
  * @Todo
@@ -72,7 +73,7 @@ extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PL
  */
 
 string Ring[200,4], SymExt;
-double FPI[1,5], RingOrd[1, 3];
+double FPI[1,6], RingOrd[1, 3];
 int ringnum;
 
 
@@ -205,6 +206,8 @@ void initDebugInfo(string _ring[][])
 	createTextObj("price_header_col_6", 375,y, "bLowest");
 	createTextObj("price_header_col_7", 465,y, "sFPI");
 	createTextObj("price_header_col_8", 555,y, "sHighest");
+	createTextObj("price_header_col_9", 655,y, "sH-bL");
+
 
 	//-- broker price table body
 	for(int i = 1; i < ringnum; i ++)
@@ -220,6 +223,7 @@ void initDebugInfo(string _ring[][])
 			createTextObj("price_body_row_" + i + "_col_6", 375,y);
 			createTextObj("price_body_row_" + i + "_col_7", 465,y);
 			createTextObj("price_body_row_" + i + "_col_8", 555,y);
+			createTextObj("price_body_row_" + i + "_col_9", 655,y);
 		}
 	}
 
@@ -250,7 +254,7 @@ void updateDubugInfo(double _fpi[][])
 
 	for(int i = 1; i < ringnum; i++)	//-- row 5 to row 10
 	{
-		for(int j = 5; j < 9; j++)
+		for(int j = 5; j < 10; j++)
 		{
 			if(j==5 || j==7)
 				setTextObj("price_body_row_" + i + "_col_" + j, _fpi[i][j-4], DeepSkyBlue);
@@ -391,6 +395,8 @@ string findAvailableSymbol(string &_symbols[][])
 	ArrayResize(_symbols, n);
 }
 
+//--
+
 
 
 /*
@@ -434,6 +440,10 @@ void getFPI(double &_fpi[][])
 		//-- sell FPI history
 		if(_fpi[i][4]==0 || _fpi[i][3]>_fpi[i][4]) 
 			_fpi[i][4] = _fpi[i][3];
+
+		//-- sH-bL
+		if(_fpi[i][5]==0 || _fpi[i][4] - _fpi[i][2] > _fpi[i][5])
+			_fpi[i][5] = _fpi[i][4] - _fpi[i][2];
 	}
 }
 
