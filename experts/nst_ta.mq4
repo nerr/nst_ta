@@ -32,7 +32,7 @@
  * v0.1.6  [dev] 2012-11-21 add extern item "LotsDigit" default value is 2, but some account allow 1 digit only; fix third order log output text;
  * v0.1.7  [dev] 2012-11-21 change debug object style;
  * v0.1.8  [dev] 2012-11-21 add updateSettingInfo() func;
- * v0.1.9  [dev] 2012-11-22 add checkUnavailableSymbol() func use to self-adaption current support symbol;
+ * v0.1.9  [dev] 2012-11-22 add checkUnavailableSymbol() func use to self-adaption current support symbol; add 6 new ring;
  * 
  * @Todo
  */
@@ -84,7 +84,8 @@ int init()
 	int i, j, n;
 
 	//-- Set up rings
-	string ring[21, 4];
+	string ring[29, 4];
+	//-- Set up rings
 	ring[ 1,1] = "EURCHF"; ring[ 1,2] = "EURUSD"; ring[ 1,3] = "USDCHF";
 	ring[ 2,1] = "EURCHF"; ring[ 2,2] = "EURGBP"; ring[ 2,3] = "GBPCHF";
 	ring[ 3,1] = "EURJPY"; ring[ 3,2] = "EURAUD"; ring[ 3,3] = "AUDJPY";
@@ -105,6 +106,14 @@ int init()
 	ring[18,1] = "NZDCAD"; ring[18,2] = "NZDUSD"; ring[18,3] = "USDCAD";
 	ring[19,1] = "EURNZD"; ring[19,2] = "EURGBP"; ring[19,3] = "GBPNZD";
 	ring[20,1] = "AUDUSD"; ring[20,2] = "AUDNZD"; ring[20,3] = "NZDUSD";
+	ring[21,1] = "USDJPY"; ring[21,2] = "USDCAD"; ring[21,3] = "CADJPY"; //-- cadjpy
+	ring[22,1] = "EURJPY"; ring[22,2] = "EURCAD"; ring[22,3] = "CADJPY";
+	ring[23,1] = "GBPJPY"; ring[23,2] = "GBPCAD"; ring[23,3] = "CADJPY";
+	ring[24,1] = "AUDJPY"; ring[24,2] = "AUDCAD"; ring[24,3] = "CADJPY";
+	ring[25,1] = "EURCHF"; ring[25,2] = "EURCAD"; ring[25,3] = "CADCHF"; //-- cafchf
+	ring[26,1] = "USDCHF"; ring[26,2] = "USDCAD"; ring[26,3] = "CADCHF";
+	ring[27,1] = "GBPCHF"; ring[27,2] = "GBPCAD"; ring[27,3] = "CADCHF";
+	ring[28,1] = "AUDCHF"; ring[28,2] = "AUDCAD"; ring[28,3] = "CADCHF";
 
 	checkUnavailableSymbol(ring, Ring, ringnum);
 
