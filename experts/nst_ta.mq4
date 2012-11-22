@@ -35,6 +35,9 @@
  * v0.1.9  [dev] 2012-11-22 add checkUnavailableSymbol() func use to self-adaption current support symbol; add 6 new ring;
  * v0.1.10 [dev] 2012-11-22 finished auto get all ring of current broker;
  * v0.1.11 [dev] 2012-11-22 add extern item "Currencies" use to custum currency whitch user want it;
+ * v0.1.12 [dev] 2012-11-22 fix ring table header real ring number;
+ *
+ *
  * @Todo
  */
 
@@ -191,7 +194,8 @@ void initDebugInfo(string _ring[][])
 
 	//-- broker price table header
 	y += 15;
-	createTextObj("price_header", 25,	y, ">>>Ring(" + ringnum + ") & Price & FPI", titlecolor);
+	int realringnum = ringnum - 1;
+	createTextObj("price_header", 25,	y, ">>>Ring(" + realringnum + ") & Price & FPI", titlecolor);
 	y += 15;
 	createTextObj("price_header_col_1", 25,	y, "Serial");
 	createTextObj("price_header_col_2", 75, y, "SymbolA");
