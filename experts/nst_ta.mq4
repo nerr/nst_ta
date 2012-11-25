@@ -678,7 +678,7 @@ void checkCurrentOrder(double &_ringord[][])
 }
 
 //-- get order information by order comment string
-void getInfoByComment(string _commont, int &_ringindex, int &_symbolindex; int &_direction, double &_fpi)
+void getInfoByComment(string _commont, int &_ringindex, int &_symbolindex, int &_direction, double &_fpi)
 {
 	int verticalchart = StringFind(_commont, "|", 0);
 	int atchart = StringFind(_commont, "@", verticalchart);
@@ -687,7 +687,7 @@ void getInfoByComment(string _commont, int &_ringindex, int &_symbolindex; int &
 	_fpi = StrToDouble(StringSubstr(_commont, atchart+1, 0));
 	_direction = StrToDouble(StringSubstr(_commont, verticalchart+1, 1));
 	_ringindex = StrToInteger(StringSubstr(_commont, 0, sharpchart));
-	_symbolindex = StrTointeger(StringSubstr(_commont, sharpchart+1, 1));
+	_symbolindex = StrToInteger(StringSubstr(_commont, sharpchart+1, 1));
 }
 
 
