@@ -37,7 +37,7 @@
  * v0.1.11 [dev] 2012-11-22 add extern item "Currencies" use to custum currency whitch user want it;
  * v0.1.12 [dev] 2012-11-22 fix ring table header real ring number;
  * v0.1.13 [dev] 2012-11-22 add col name "sH-bL" in ring table;
- * v0.1.14 [dev] 2012-11-23 add errorDescription() func use to desc error code;
+ * v0.1.14 [dev] 2012-11-23 add errorDescription() func use to desc error code; add background;
  *
  *
  * @Todo
