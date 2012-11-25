@@ -39,7 +39,8 @@
  * v0.1.13 [dev] 2012-11-22 add col name "sH-bL" in ring table;
  * v0.1.14 [dev] 2012-11-23 add errorDescription() func use to desc error code; add background;
  * v0.1.15 [dev] 2012-11-25 change extern Currencies default value;
- * v0.1.16 [dev] 2012-11-25 remove the while() int start() func; change order comment info format add symbol number behind ring index; 
+ * v0.1.16 [dev] 2012-11-25 remove the while() int start() func; change order comment info format add symbol number behind ring index;
+ * v0.1.17 [dev] 2012-11-25 add ringHaveOrder() func use to check a ring have order or not; add updateRingInfo() func; finished checkCurrentOrder() func;
  *
  *
  * @Todo
@@ -77,7 +78,7 @@ extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|";
  */
 
 string Ring[200, 4], SymExt;
-double FPI[1, 6], RingOrd[1, 3], Thold[1, 2], RingM[1, 4];
+double FPI[1, 6], RingOrd[1, 10], Thold[1, 2], RingM[1, 4];
 int ringnum;
 
 
@@ -134,7 +135,7 @@ int start()
 
 	updateDubugInfo(FPI);
 
-	//updateRingInfo(RingOrd);
+	updateRingInfo(RingOrd);
 
 	updateSettingInfo();
 
@@ -168,7 +169,7 @@ void initDebugInfo(string _ring[][])
 {
 	color bgcolor = C'0x27,0x28,0x22';
 	color titlecolor = C'0xd9,0x26,0x59';
-	int y = 0;
+	int y, i, j;
 
 	//-- background
 	for(int bgnum = 0; bgnum < 8; bgnum++)
@@ -204,10 +205,10 @@ void initDebugInfo(string _ring[][])
 
 
 	//-- broker price table body
-	for(int i = 1; i < ringnum; i ++)
+	for(i = 1; i < ringnum; i ++)
 	{
 		y += 15;
-		for (int j = 1; j < 4; j ++) 
+		for (j = 1; j < 4; j ++) 
 		{
 			createTextObj("price_body_row_" + i + "_col_1", 25,	y, i, Gray);
 			createTextObj("price_body_row_" + i + "_col_2", 75,	y, _ring[i,1], White);
@@ -239,6 +240,31 @@ void initDebugInfo(string _ring[][])
 	//-- ring info
 	y += 15 * 2;
 	createTextObj("ring_header", 25,	y, ">>>Ring", titlecolor);
+	y += 15;
+	createTextObj("order_header_col_0", 25,	y, "RingId");
+	createTextObj("order_header_col_1", 75,	y, "OrderA");
+	createTextObj("order_header_col_2", 75, y, "OrderB");
+	createTextObj("order_header_col_3", 25,	y, "OrderC");
+	createTextObj("order_header_col_4", 75, y, "ProfitA");
+	createTextObj("order_header_col_5", 75, y, "ProfitB");
+	createTextObj("order_header_col_6", 75, y, "ProfitC");
+	createTextObj("order_header_col_7", 75, y, "Summary");
+	createTextObj("order_header_col_8", 75, y, "FPI");
+
+	for(i = 0; i < 10; i ++)
+	{
+		y += 15;
+
+		createTextObj("order_body_row_" + i + "_col_0", 25,	y);
+		createTextObj("order_body_row_" + i + "_col_1", 75,	y);
+		createTextObj("order_body_row_" + i + "_col_2", 145,y);
+		createTextObj("order_body_row_" + i + "_col_3", 215,y);
+		createTextObj("order_body_row_" + i + "_col_4", 285,y);
+		createTextObj("order_body_row_" + i + "_col_5", 375,y);
+		createTextObj("order_body_row_" + i + "_col_6", 465,y);
+		createTextObj("order_body_row_" + i + "_col_7", 555,y);
+		createTextObj("order_body_row_" + i + "_col_8", 655,y);
+	}
 }
 
 //--  update new debug info to chart
@@ -274,6 +300,32 @@ void updateSettingInfo()
 	setTextObj("setting_body_row_1_col_6", DoubleToStr(BaseLots, LotsDigit));
 	setTextObj("setting_body_row_1_col_8", DoubleToStr(BuyThold, 4));
 	setTextObj("setting_body_row_1_col_10",DoubleToStr(SellThold, 4));
+}
+
+//-- update ring order information to chart
+void updateRingInfo(double _ringord[][])
+{
+	int i, j;
+	for(i = 0; i < 10; i ++)
+	{
+		if(_ringord[i][0] > 0)
+		{
+			for(j = 0; j < 9; j++)
+			{
+				if(j==7)
+					setTextObj("order_body_row_" + i + "_col_" + j, _ringord[i][0], DeepSkyBlue);
+				else
+					setTextObj("order_body_row_" + i + "_col_" + j, _ringord[i][0]);
+			}
+		}
+		else
+		{
+			for(j = 0; j < 9; j++)
+			{
+				setTextObj("order_body_row_" + i + "_col_" + j, "");
+			}
+		}
+	}
 }
 
 //-- create text object
@@ -520,7 +572,7 @@ void getFPI(double &_fpi[][])
 		//-- buy fpi
 		_fpi[i][1] = _price[1] / (_price[2] * _price[3]);
 		//-- check buy chance
-		if(_fpi[i][1] < BuyThold && EnableTrade == true && (RingOrd[i][0] == 0 || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
+		if(_fpi[i][1] < BuyThold && EnableTrade == true && (ringHaveOrder(ringnum, RingOrd) == false || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
 		{
 			openRing(0, i, _price, _fpi[i][1]);
 		}
@@ -534,7 +586,7 @@ void getFPI(double &_fpi[][])
 		//-- sell fpi
 		_fpi[i][3] = _price[1] / (_price[2] * _price[3]);
 		//-- check sell chance
-		if(_fpi[i][3] > SellThold && EnableTrade == true && (RingOrd[i][0] == 0 || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
+		if(_fpi[i][3] > SellThold && EnableTrade == true && (ringHaveOrder(ringnum, RingOrd) == false || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
 		{
 			openRing(1, i, _price, _fpi[i][3]);
 		}
@@ -643,20 +695,33 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
  */
 
 //-- check current order
+/* array RingOrd format
+ * RingOrd[x, ]
+ * [0] ring index
+ * [1] a order ticket
+ * [2] b order ticket
+ * [3] c order ticket
+ * [4] a order real profit
+ * [5] b order real profit
+ * [6] c order real profit
+ * [7] ring summary profit
+ * [8] fpi
+ * [9] 
+ */
 void checkCurrentOrder(double &_ringord[][])
 {
+	//-- init ring order array
+	ArrayResize(_ringord, 100);
+
+
 	double ringfpi;
-	int i, j, ringindex, ringdirection, symbolindex;
+	int i, j, ringindex, ringdirection, symbolindex, arridx, realringnum;
 	int total = OrdersTotal();
 	//string 
 
 	if(total == 0)
 	{
-		for(i = 1; i < ringnum; i++)
-		{
-			_ringord[i][0] = 0; //-- order number of ring
-			_ringord[i][1] = 0; //-- order fpi of ring
-		}
+		ArrayResize(_ringord, 0);
 	}
 	else
 	{
@@ -668,13 +733,57 @@ void checkCurrentOrder(double &_ringord[][])
 				{
 					getInfoByComment(OrderComment(), ringindex, symbolindex, ringdirection, ringfpi);
 
-					_ringord[ringindex][0]++;
-					if(_ringord[ringindex][1] < ringfpi)
-						_ringord[ringindex][1] = ringfpi;
+					//--
+					arridx = findRingOrdIdx(_ringord, ringindex, ringfpi);
+					if(arridx == -1)
+					{
+						_ringord[i][0] = ringindex;
+						_ringord[i][8] = ringfpi;
+						_ringord[i][symbolindex] = OrderTicket();
+						_ringord[i][symbolindex+3] = OrderProfit() + OrderSwap() + OrderCommission();
+						realringnum = i;
+					}
+					else
+					{
+						_ringord[arridx][symbolindex] = OrderTicket();
+						_ringord[arridx][symbolindex+3] = OrderProfit() + OrderSwap() + OrderCommission();
+					}
 				}
 			}
 		}
+
+		ArrayResize(_ringord, realringnum + 1);
+		for(i = 0; i <= realringnum; i++)
+		{
+			_ringord[i][7] = _ringord[i][4] + _ringord[i][5] + _ringord[i][6];
+		}
 	}
+}
+
+//-- check ring order have ring index or not
+int findRingOrdIdx(double _ringord[][], int _ringindex, double _fpi)
+{
+	int size = ArrayRange(_ringord, 0);
+	for(int i = 0; i < size; i++)
+	{
+		if(_ringord[i][0] == _ringindex && _ringord[i][8] == _fpi)
+			return(i);
+	}
+	return(-1);
+}
+
+//-- check ring have order or not by ring index number
+bool ringHaveOrder(int _ringindex, double _ringord[][])
+{
+	int numberofring = ArrayRange(_ringord, 0);
+
+	for(int i = 0; i < numberofring; i++)
+	{
+		if(_ringord[i][0] == _ringindex)
+			return(true);
+	}
+
+	return(false);
 }
 
 //-- get order information by order comment string
