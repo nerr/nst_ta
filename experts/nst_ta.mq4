@@ -39,6 +39,7 @@
  * v0.1.13 [dev] 2012-11-22 add col name "sH-bL" in ring table;
  * v0.1.14 [dev] 2012-11-23 add errorDescription() func use to desc error code; add background;
  * v0.1.15 [dev] 2012-11-25 change extern Currencies default value;
+ * v0.1.16 [dev] 2012-11-25 remove the while() int start() func; change order comment info format add symbol number behind ring index; 
  *
  *
  * @Todo
@@ -127,17 +128,13 @@ int deinit()
 //-- start
 int start()
 {
-	int i = 0;
-	while(i<20)
-	{
-		checkCurrentOrder(RingOrd);
+	checkCurrentOrder(RingOrd);
 
-		getFPI(FPI);
+	getFPI(FPI);
 
-		updateDubugInfo(FPI);
+	updateDubugInfo(FPI);
 
-		i++;
-	}
+	//updateRingInfo(RingOrd);
 
 	updateSettingInfo();
 
@@ -564,13 +561,13 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 		b_c_direction = 0;
 
 	//-- make comment string
-	string commentText = _index + "|" + _direction + "@" + _fpi;
+	string commentText = "|" + _direction + "@" + _fpi;
 
 	//-- calculate last symbol order losts
 	double c_lots = NormalizeDouble(BaseLots * _price[2], LotsDigit);
 
 	//-- open order a
-	ticketno[1] = OrderSend(Ring[_index][1], _direction, BaseLots, _price[1], 0, 0, 0, commentText, MagicNumber);
+	ticketno[1] = OrderSend(Ring[_index][1], _direction, BaseLots, _price[1], 0, 0, 0, _index + "＃1" + commentText, MagicNumber);
 	if(ticketno[1] <= 0)
 	{
 		if(_direction==0 && MarketInfo(Ring[_index][1], MODE_ASK) < _price[1])
@@ -588,7 +585,7 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 	}
 
 	//-- open order b
-	ticketno[2] = OrderSend(Ring[_index][2], b_c_direction, BaseLots, _price[2], 0, 0, 0, commentText, MagicNumber);
+	ticketno[2] = OrderSend(Ring[_index][2], b_c_direction, BaseLots, _price[2], 0, 0, 0, _index + "＃2" + commentText, MagicNumber);
 	if(ticketno[2] <= 0)
 	{
 		if(b_c_direction==0 && MarketInfo(Ring[_index][2], MODE_ASK) < _price[2])
@@ -604,7 +601,7 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 
 		limit_direction = b_c_direction + 2;
 
-		ticketno[2] = OrderSend(Ring[_index][2], limit_direction, BaseLots, _price[2], 0, 0, 0, commentText, MagicNumber);
+		ticketno[2] = OrderSend(Ring[_index][2], limit_direction, BaseLots, _price[2], 0, 0, 0, _index + "＃2" + commentText, MagicNumber);
 		if(ticketno[2] > 0)
 			outputLog("nst_ta - Second limit order opened. [" + Ring[_index][2] + "]", "Trading info");
 		else
@@ -612,7 +609,7 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 	}
 
 	//-- open order c
-	ticketno[3] = OrderSend(Ring[_index][3], b_c_direction, c_lots, _price[3], 0, 0, 0, commentText, MagicNumber);
+	ticketno[3] = OrderSend(Ring[_index][3], b_c_direction, c_lots, _price[3], 0, 0, 0, _index + "＃3" + commentText, MagicNumber);
 	if(ticketno[3] <= 0)
 	{
 		if(b_c_direction==0 && MarketInfo(Ring[_index][3], MODE_ASK) < _price[3])
@@ -628,7 +625,7 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 
 		limit_direction = b_c_direction + 2;
 		
-		ticketno[3] = OrderSend(Ring[_index][3], limit_direction, c_lots, _price[3], 0, 0, 0, commentText, MagicNumber);
+		ticketno[3] = OrderSend(Ring[_index][3], limit_direction, c_lots, _price[3], 0, 0, 0, _index + "＃3" + commentText, MagicNumber);
 		if(ticketno[3] > 0)
 			outputLog("nst_ta - Third limit order opened. [" + Ring[_index][3] + "]", "Trading info");
 		else
@@ -649,7 +646,7 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 void checkCurrentOrder(double &_ringord[][])
 {
 	double ringfpi;
-	int i, j, ringindex, ringdirection;
+	int i, j, ringindex, ringdirection, symbolindex;
 	int total = OrdersTotal();
 	//string 
 
@@ -669,7 +666,7 @@ void checkCurrentOrder(double &_ringord[][])
 			{
 				if(OrderMagicNumber() == MagicNumber)
 				{
-					getInfoByComment(OrderComment(), ringindex, ringdirection, ringfpi);
+					getInfoByComment(OrderComment(), ringindex, symbolindex, ringdirection, ringfpi);
 
 					_ringord[ringindex][0]++;
 					if(_ringord[ringindex][1] < ringfpi)
@@ -680,15 +677,17 @@ void checkCurrentOrder(double &_ringord[][])
 	}
 }
 
-//--
-void getInfoByComment(string _commont, int &_index, int &_direction, double &_fpi)
+//-- get order information by order comment string
+void getInfoByComment(string _commont, int &_ringindex, int &_symbolindex; int &_direction, double &_fpi)
 {
 	int verticalchart = StringFind(_commont, "|", 0);
 	int atchart = StringFind(_commont, "@", verticalchart);
+	int sharpchart = StringFind(_commont, "#", 0);
 
 	_fpi = StrToDouble(StringSubstr(_commont, atchart+1, 0));
 	_direction = StrToDouble(StringSubstr(_commont, verticalchart+1, 1));
-	_index = StrToInteger(StringSubstr(_commont, 0, verticalchart));
+	_ringindex = StrToInteger(StringSubstr(_commont, 0, sharpchart));
+	_symbolindex = StrTointeger(StringSubstr(_commont, sharpchart+1, 1));
 }
 
 
