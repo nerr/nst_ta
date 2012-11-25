@@ -48,7 +48,7 @@ It is a arbitrage script for Metatrader 4 base on Triangular Arbitrage strategy.
 	</tr>
 	<tr>
 		<td>Currencies</td>
-		<td>EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|</td>
+		<td>EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|</td>
 		<td>script will use these currencies to find triangular arbitrage ring</td>
 	</tr>
 </table>

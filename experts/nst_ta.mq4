@@ -38,6 +38,7 @@
  * v0.1.12 [dev] 2012-11-22 fix ring table header real ring number;
  * v0.1.13 [dev] 2012-11-22 add col name "sH-bL" in ring table;
  * v0.1.14 [dev] 2012-11-23 add errorDescription() func use to desc error code; add background;
+ * v0.1.15 [dev] 2012-11-25 change extern Currencies default value;
  *
  *
  * @Todo
@@ -64,7 +65,8 @@ extern double 	BuyThold		= 0.9999;
 extern double 	SellThold 		= 1.0001;
 extern string 	BrokerSetting 	= "---------Broker Setting--------";
 extern int 		LotsDigit 		= 2;
-extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|";
+extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|";
+//extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|";
 
 
 
