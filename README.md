@@ -2,7 +2,56 @@
 
 Nerr Smart Trader - Triangular Arbitrage Trading System
 
-It is a arbitrage script for Metatrader 4 base on Triangular Arbitrage strategy.
+It is a arbitrage script for Metatrader 4 base on Triangular Arbitrage strategy. The script can find triangular arbitrage ring auto.
+
+## extern variable explain ##
+<table>
+	<tr>
+		<td>name</td>
+		<td>default</td>
+		<td>desc</td>
+	</tr>
+	<tr>
+		<td>EnableTrade</td>
+		<td>true</td>
+		<td>allow trade switch</td>
+	</tr>
+	<tr>
+		<td>Superaddition</td>
+		<td>false</td>
+		<td>the the value is true and the thold value is big enough superaddition a ring again</td>
+	</tr>
+	<tr>
+		<td>BaseLots</td>
+		<td>0.5</td>
+		<td>per order lots not the ring total lots</td>
+	</tr>
+	<tr>
+		<td>MagicNumber</td>
+		<td>99901</td>
+		<td>use to tag the order opened by this EA</td>
+	</tr>
+	<tr>
+		<td>BuyThold</td>
+		<td>0.9999</td>
+		<td>the value use to thold the buy ring</td>
+	</tr>
+	<tr>
+		<td>SellThold</td>
+		<td>1.0001</td>
+		<td>the value use to thold the sell ring</td>
+	</tr>
+	<tr>
+		<td>LotsDigit</td>
+		<td>2</td>
+		<td>if your account allow min lots 0.1 only please set the value to 1, else do not change</td>
+	</tr>
+	<tr>
+		<td>Currencies</td>
+		<td>EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|</td>
+		<td>script will use these currencies to find triangular arbitrage ring</td>
+	</tr>
+</table>
 
 
 # License
