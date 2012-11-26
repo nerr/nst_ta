@@ -43,7 +43,7 @@
  * v0.1.17 [dev] 2012-11-25 add ringHaveOrder() func use to check a ring have order or not; add updateRingInfo() func; finished checkCurrentOrder() func;
  * v0.1.18 [dev] 2012-11-26 debug func updateRingInfo() and checkCurrentOrder() bug; change default extern Magicnumber value;
  * v0.1.19 [dev] 2012-11-26 fix some typo bug; ring info part can runable but not complete;
- * 
+ * v0.1.20 [dev] 2012-11-26 finished auto get thold value and remove extern about thold item;
  *
  *
  * @Todo
@@ -66,8 +66,6 @@ extern bool 	EnableTrade 	= true;
 extern bool 	Superaddition	= false;
 extern double 	BaseLots    	= 0.5;
 extern int 		MagicNumber 	= 99901;
-extern double 	BuyThold		= 0.9999;
-extern double 	SellThold 		= 1.0001;
 extern string 	BrokerSetting 	= "---------Broker Setting--------";
 extern int 		LotsDigit 		= 2;
 extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|";
@@ -81,7 +79,7 @@ extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|";
  */
 
 string Ring[200, 4], SymExt;
-double FPI[1, 6], RingOrd[1, 10], Thold[1, 2], RingM[1, 4];
+double FPI[1, 8], RingOrd[1, 10], Thold[1, 2], RingM[1, 4];
 int ringnum;
 
 
@@ -204,8 +202,8 @@ void initDebugInfo(string _ring[][])
 	createTextObj("price_header_col_6", 375,y, "bLowest");
 	createTextObj("price_header_col_7", 465,y, "sFPI");
 	createTextObj("price_header_col_8", 555,y, "sHighest");
-	createTextObj("price_header_col_9", 655,y, "sH-bL");
-
+	createTextObj("price_header_col_9", 645,y, "bThold");
+	createTextObj("price_header_col_10",735,y, "sThold");
 
 	//-- broker price table body
 	for(i = 1; i < ringnum; i ++)
@@ -221,7 +219,8 @@ void initDebugInfo(string _ring[][])
 			createTextObj("price_body_row_" + i + "_col_6", 375,y);
 			createTextObj("price_body_row_" + i + "_col_7", 465,y);
 			createTextObj("price_body_row_" + i + "_col_8", 555,y);
-			createTextObj("price_body_row_" + i + "_col_9", 655,y);
+			createTextObj("price_body_row_" + i + "_col_9", 645,y);
+			createTextObj("price_body_row_" + i + "_col_10",735,y);
 		}
 	}
 
@@ -235,10 +234,6 @@ void initDebugInfo(string _ring[][])
 	createTextObj("setting_body_row_1_col_4", 225,	y);
 	createTextObj("setting_body_row_1_col_5", 285,	y, "BaseLots:");
 	createTextObj("setting_body_row_1_col_6", 355,	y);
-	createTextObj("setting_body_row_1_col_7", 405,	y, "bThold:");
-	createTextObj("setting_body_row_1_col_8", 455,	y);
-	createTextObj("setting_body_row_1_col_9", 525,	y, "sThold:");
-	createTextObj("setting_body_row_1_col_10",575,	y);
 
 	//-- ring info
 	y += 15 * 2;
@@ -276,7 +271,7 @@ void updateDubugInfo(double _fpi[][])
 
 	for(int i = 1; i < ringnum; i++)	//-- row 5 to row 10
 	{
-		for(int j = 5; j < 10; j++)
+		for(int j = 5; j < 11; j++)
 		{
 			if(j==5 || j==7)
 				setTextObj("price_body_row_" + i + "_col_" + j, _fpi[i][j-4], DeepSkyBlue);
@@ -300,8 +295,6 @@ void updateSettingInfo()
 	setTextObj("setting_body_row_1_col_4", settingstatus);
 	
 	setTextObj("setting_body_row_1_col_6", DoubleToStr(BaseLots, LotsDigit));
-	setTextObj("setting_body_row_1_col_8", DoubleToStr(BuyThold, 4));
-	setTextObj("setting_body_row_1_col_10",DoubleToStr(SellThold, 4));
 }
 
 //-- update ring order information to chart
@@ -579,7 +572,7 @@ void getFPI(double &_fpi[][])
 		//-- buy fpi
 		_fpi[i][1] = _price[1] / (_price[2] * _price[3]);
 		//-- check buy chance
-		if(_fpi[i][1] < BuyThold && EnableTrade == true && (ringHaveOrder(ringnum, RingOrd) == false || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
+		if(_fpi[i][1] <= _fpi[i][5] && EnableTrade == true && (ringHaveOrder(ringnum, RingOrd) == false || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
 		{
 			openRing(0, i, _price, _fpi[i][1]);
 		}
@@ -593,7 +586,7 @@ void getFPI(double &_fpi[][])
 		//-- sell fpi
 		_fpi[i][3] = _price[1] / (_price[2] * _price[3]);
 		//-- check sell chance
-		if(_fpi[i][3] > SellThold && EnableTrade == true && (ringHaveOrder(ringnum, RingOrd) == false || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
+		if(_fpi[i][6] > 0 &&_fpi[i][3] >= _fpi[i][7] && EnableTrade == true && (ringHaveOrder(ringnum, RingOrd) == false || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
 		{
 			openRing(1, i, _price, _fpi[i][3]);
 		}
@@ -602,8 +595,15 @@ void getFPI(double &_fpi[][])
 			_fpi[i][4] = _fpi[i][3];
 
 		//-- sH-bL
-		if(_fpi[i][5]==0 || _fpi[i][4] - _fpi[i][2] > _fpi[i][5])
-			_fpi[i][5] = _fpi[i][4] - _fpi[i][2];
+		if(_fpi[i][7]==0 || _fpi[i][4] - _fpi[i][2] > _fpi[i][7])
+			_fpi[i][7] = _fpi[i][4] - _fpi[i][2];
+
+		//-- auto set fpi thold
+		if(_fpi[i][7] >= 0.0005 && _fpi[i][5] == 0 && _fpi[i][6] == 0)
+		{
+			_fpi[i][5] = _fpi[i][2]; //-- 
+			_fpi[i][6] = _fpi[i][4]; //--
+		}
 	}
 }
 
