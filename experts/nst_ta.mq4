@@ -41,7 +41,7 @@
  * v0.1.15 [dev] 2012-11-25 change extern Currencies default value;
  * v0.1.16 [dev] 2012-11-25 remove the while() int start() func; change order comment info format add symbol number behind ring index;
  * v0.1.17 [dev] 2012-11-25 add ringHaveOrder() func use to check a ring have order or not; add updateRingInfo() func; finished checkCurrentOrder() func;
- * v0.1.18 [dev] 2012-11-26 fix func updateRingInfo() and checkCurrentOrder() bug;
+ * v0.1.18 [dev] 2012-11-26 debug func updateRingInfo() and checkCurrentOrder() bug; change default extern Magicnumber value;
  *
  *
  * @Todo
@@ -760,7 +760,7 @@ void checkCurrentOrder(double &_ringord[][])
 		}
 
 		ArrayResize(_ringord, n);
-		for(i = 0; i < realringnum; i++)
+		for(i = 0; i < n; i++)
 		{
 			_ringord[i][7] = _ringord[i][4] + _ringord[i][5] + _ringord[i][6];
 		}
