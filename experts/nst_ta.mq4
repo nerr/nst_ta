@@ -41,6 +41,7 @@
  * v0.1.15 [dev] 2012-11-25 change extern Currencies default value;
  * v0.1.16 [dev] 2012-11-25 remove the while() int start() func; change order comment info format add symbol number behind ring index;
  * v0.1.17 [dev] 2012-11-25 add ringHaveOrder() func use to check a ring have order or not; add updateRingInfo() func; finished checkCurrentOrder() func;
+ * v0.1.18 [dev] 2012-11-26 fix func updateRingInfo() and checkCurrentOrder() bug;
  *
  *
  * @Todo
@@ -62,7 +63,7 @@ extern string 	TradeSetting 	= "---------Trade Setting--------";
 extern bool 	EnableTrade 	= true;
 extern bool 	Superaddition	= false;
 extern double 	BaseLots    	= 0.5;
-extern int 		MagicNumber 	= 99901;
+extern int 		MagicNumber 	= 99902;
 extern double 	BuyThold		= 0.9999;
 extern double 	SellThold 		= 1.0001;
 extern string 	BrokerSetting 	= "---------Broker Setting--------";
@@ -241,29 +242,28 @@ void initDebugInfo(string _ring[][])
 	y += 15 * 2;
 	createTextObj("ring_header", 25,	y, ">>>Ring", titlecolor);
 	y += 15;
-	createTextObj("order_header_col_0", 25,	y, "RingId");
-	createTextObj("order_header_col_1", 75,	y, "OrderA");
-	createTextObj("order_header_col_2", 75, y, "OrderB");
-	createTextObj("order_header_col_3", 25,	y, "OrderC");
-	createTextObj("order_header_col_4", 75, y, "ProfitA");
-	createTextObj("order_header_col_5", 75, y, "ProfitB");
-	createTextObj("order_header_col_6", 75, y, "ProfitC");
-	createTextObj("order_header_col_7", 75, y, "Summary");
-	createTextObj("order_header_col_8", 75, y, "FPI");
+	createTextObj("order_header_col_0", 25, y, "RingId");
+	createTextObj("order_header_col_1", 100,y, "OrderA");
+	createTextObj("order_header_col_2", 200,y, "OrderB");
+	createTextObj("order_header_col_3", 300,y, "OrderC");
+	createTextObj("order_header_col_4", 400,y, "ProfitA");
+	createTextObj("order_header_col_5", 475,y, "ProfitB");
+	createTextObj("order_header_col_6", 550,y, "ProfitC");
+	createTextObj("order_header_col_7", 625,y, "Summary");
+	createTextObj("order_header_col_8", 700,y, "FPI");
 
-	for(i = 0; i < 10; i ++)
+	for(i = 0; i < 50; i ++)
 	{
 		y += 15;
-
-		createTextObj("order_body_row_" + i + "_col_0", 25,	y);
-		createTextObj("order_body_row_" + i + "_col_1", 75,	y);
-		createTextObj("order_body_row_" + i + "_col_2", 145,y);
-		createTextObj("order_body_row_" + i + "_col_3", 215,y);
-		createTextObj("order_body_row_" + i + "_col_4", 285,y);
-		createTextObj("order_body_row_" + i + "_col_5", 375,y);
-		createTextObj("order_body_row_" + i + "_col_6", 465,y);
-		createTextObj("order_body_row_" + i + "_col_7", 555,y);
-		createTextObj("order_body_row_" + i + "_col_8", 655,y);
+		createTextObj("order_body_row_" + i + "_col_0", 25, y);
+		createTextObj("order_body_row_" + i + "_col_1", 100,y);
+		createTextObj("order_body_row_" + i + "_col_2", 200,y);
+		createTextObj("order_body_row_" + i + "_col_3", 300,y);
+		createTextObj("order_body_row_" + i + "_col_4", 400,y);
+		createTextObj("order_body_row_" + i + "_col_5", 475,y);
+		createTextObj("order_body_row_" + i + "_col_6", 550,y);
+		createTextObj("order_body_row_" + i + "_col_7", 625,y);
+		createTextObj("order_body_row_" + i + "_col_8", 700,y);
 	}
 }
 
@@ -306,21 +306,26 @@ void updateSettingInfo()
 void updateRingInfo(double _ringord[][])
 {
 	int i, j;
-	for(i = 0; i < 10; i ++)
+	int row = ArrayRange(_ringord, 0);
+	int col= ArrayRange(_ringord, 1);
+
+	for(i = 0; i < row; i ++)
 	{
 		if(_ringord[i][0] > 0)
 		{
-			for(j = 0; j < 9; j++)
-			{
-				if(j==7)
-					setTextObj("order_body_row_" + i + "_col_" + j, _ringord[i][0], DeepSkyBlue);
-				else
-					setTextObj("order_body_row_" + i + "_col_" + j, _ringord[i][0]);
-			}
+			setTextObj("order_body_row_" + i + "_col_0", DoubleToStr(_ringord[i][0], 0));
+			setTextObj("order_body_row_" + i + "_col_1", DoubleToStr(_ringord[i][1], 0));
+			setTextObj("order_body_row_" + i + "_col_2", DoubleToStr(_ringord[i][2], 0));
+			setTextObj("order_body_row_" + i + "_col_3", DoubleToStr(_ringord[i][3], 0));
+			setTextObj("order_body_row_" + i + "_col_4", DoubleToStr(_ringord[i][4], 2));
+			setTextObj("order_body_row_" + i + "_col_5", DoubleToStr(_ringord[i][5], 2));
+			setTextObj("order_body_row_" + i + "_col_6", DoubleToStr(_ringord[i][6], 2));
+			setTextObj("order_body_row_" + i + "_col_7", DoubleToStr(_ringord[i][7], 2), DeepSkyBlue);
+			setTextObj("order_body_row_" + i + "_col_8", DoubleToStr(_ringord[i][8], 5));
 		}
 		else
 		{
-			for(j = 0; j < 9; j++)
+			for(j = 0; j < col; j++)
 			{
 				setTextObj("order_body_row_" + i + "_col_" + j, "");
 			}
@@ -715,7 +720,7 @@ void checkCurrentOrder(double &_ringord[][])
 
 
 	double ringfpi;
-	int i, j, ringindex, ringdirection, symbolindex, arridx, realringnum;
+	int i, j, ringindex, ringdirection, symbolindex, arridx, n;
 	int total = OrdersTotal();
 	//string 
 
@@ -729,19 +734,21 @@ void checkCurrentOrder(double &_ringord[][])
 		{
 			if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
 			{
-				if(OrderMagicNumber() == MagicNumber)
+				if(OrderMagicNumber() == 99901)
 				{
+					
 					getInfoByComment(OrderComment(), ringindex, symbolindex, ringdirection, ringfpi);
 
 					//--
 					arridx = findRingOrdIdx(_ringord, ringindex, ringfpi);
 					if(arridx == -1)
 					{
-						_ringord[i][0] = ringindex;
-						_ringord[i][8] = ringfpi;
-						_ringord[i][symbolindex] = OrderTicket();
-						_ringord[i][symbolindex+3] = OrderProfit() + OrderSwap() + OrderCommission();
-						realringnum = i;
+						
+						_ringord[n][0] = ringindex;
+						_ringord[n][8] = ringfpi;
+						_ringord[n][symbolindex] = OrderTicket();
+						_ringord[n][symbolindex+3] = OrderProfit() + OrderSwap() + OrderCommission();
+						n++;
 					}
 					else
 					{
@@ -752,8 +759,8 @@ void checkCurrentOrder(double &_ringord[][])
 			}
 		}
 
-		ArrayResize(_ringord, realringnum + 1);
-		for(i = 0; i <= realringnum; i++)
+		ArrayResize(_ringord, n);
+		for(i = 0; i < realringnum; i++)
 		{
 			_ringord[i][7] = _ringord[i][4] + _ringord[i][5] + _ringord[i][6];
 		}
@@ -799,264 +806,7 @@ void getInfoByComment(string _commont, int &_ringindex, int &_symbolindex, int &
 	_symbolindex = StrToInteger(StringSubstr(_commont, sharpchart+1, 1));
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-//-- global vars
-int CloseSP = 3;
-int aDigits, bDigits, cDigits;
-double Price[4];
-string OrderCommentString = "NST_TA_";
-int TicketNo[4];
-double buyFPI, buy_hFPI, buy_lFPI;
-double sellFPI, sell_hFPI, sell_lFPI;
-double hFPI,lFPI,hProfit,lProfit;
-double ringProfit;
-int totalSpread;
-double realRingFPI;
-
-
-
-//-- init
-int init()
-{
-	//----------------------- Set up Rings ----------------------------
-	Ring[ 1,1] = "EURCHF"; Ring[ 1,2] = "EURUSD"; Ring[ 1,3] = "USDCHF";
-	Ring[ 2,1] = "EURCHF"; Ring[ 2,2] = "EURGBP"; Ring[ 2,3] = "GBPCHF";
-	Ring[ 3,1] = "EURJPY"; Ring[ 3,2] = "EURAUD"; Ring[ 3,3] = "AUDJPY";
-	Ring[ 4,1] = "EURJPY"; Ring[ 4,2] = "EURCHF"; Ring[ 4,3] = "CHFJPY";
-	Ring[ 5,1] = "EURJPY"; Ring[ 5,2] = "EURGBP"; Ring[ 5,3] = "GBPJPY";
-	Ring[ 6,1] = "EURJPY"; Ring[ 6,2] = "EURUSD"; Ring[ 6,3] = "USDJPY";
-	Ring[ 7,1] = "EURCAD"; Ring[ 7,2] = "EURUSD"; Ring[ 7,3] = "USDCAD";
-	Ring[ 8,1] = "EURUSD"; Ring[ 8,2] = "EURAUD"; Ring[ 8,3] = "AUDUSD";
-	Ring[ 9,1] = "EURUSD"; Ring[ 9,2] = "EURGBP"; Ring[ 9,3] = "GBPUSD";
-	Ring[10,1] = "GBPJPY"; Ring[10,2] = "GBPCHF"; Ring[10,3] = "CHFJPY";
-	Ring[11,1] = "GBPJPY"; Ring[11,2] = "GBPUSD"; Ring[11,3] = "USDJPY";
-	Ring[12,1] = "GBPCHF"; Ring[12,2] = "GBPUSD"; Ring[12,3] = "USDCHF";
-	Ring[13,1] = "AUDJPY"; Ring[13,2] = "AUDUSD"; Ring[13,3] = "USDJPY";
-	Ring[14,1] = "USDJPY"; Ring[14,2] = "USDCHF"; Ring[14,3] = "CHFJPY";
-
-
-
-
-
-
-
-
-
-
-
-
-	aDigits = MarketInfo(aSymbol, MODE_DIGITS);
-	bDigits = MarketInfo(bSymbol, MODE_DIGITS);
-	cDigits = MarketInfo(cSymbol, MODE_DIGITS);
-
-	hProfit = 0.0;
-	lProfit = 0.0;
-
-	return(0);
-}
-
-//-- deinit
-int deinit()
-{
-	return(0);
-}
-
-//-- start
-int start()
-{
-	getPrice();
-	int countO = countOrder();
-	double marginLevel;
-	if(OrdersTotal()>0)
-	  marginLevel = AccountEquity()/AccountMargin();
-	else
-	  marginLevel = 100;
-
-
-	if(EnableTrade==true && countO==0 && marginLevel>2)
-	{
-		TAOpen();
-	}else if(countO==3)
-	{
-		TAClose();
-		//Alert(countO);
-	}else if(countO<3 && countO>0){
-		Alert("Ring Error! ("+aSymbol+"_"+bSymbol+"_"+cSymbol+")");
-		PlaySound("alert2.wav");
-	}
-
-	watermark();
-} */
-
-/* triangularAribitrange()
- *
- * use for check FPI value, control open order and close order
- *
- */
-/*void TAOpen()
-{
-	//-- open order
-	if(buyFPI<=bOpenThold && buyFPI>0 && totalSpread<=MaxSpread)
-	{
-		openRing(0);
-		Print("Open signal(BUY):" + aSymbol + bSymbol + cSymbol + "@" + buyFPI);
-		PlaySound("0.wav");
-	}else if(sellFPI>=sOpenThold && sellFPI>0 && totalSpread<=MaxSpread)
-	{
-		openRing(1);
-		Print("Open signal(SELL):" + aSymbol + bSymbol + cSymbol + "@" + sellFPI);
-		PlaySound("0.wav");
-	}
-}
-
-void TAClose()
-{
-	if(realRingFPI==0)
-	{
-		realRingFPI = getRealFPI();
-	}
-
-	ringProfit = checkProfit();
-
-	//if(ringProfit>1 && sellFPI>=sOpenThold && sellFPI>0)
-	if(ringProfit>8)
-	{
-		//-- close ring, log text and play sound to notification
-		closeRing();
-		Print("Close signal(BUY):" + aSymbol + bSymbol + cSymbol + "@" + sellFPI);
-		PlaySound("2.wav");
-
-		//-- reset counter
-		hProfit = 0.0;
-		lProfit = 0.0;
-		realRingFPI = 0.0;
-	}
-
-	if(ringProfit>hProfit || hProfit==0) hProfit = ringProfit;
-	if(ringProfit<lProfit || lProfit==0) lProfit = ringProfit;
-}
-
-double getRealFPI()
-{
-	double fpi, aprice, bprice, cprice;
-	for(int i = 0; i < OrdersTotal(); i++)
-	{
-		if (!OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
-		{
-			// todo - no select order
-		}
-		else
-		{
-			if(OrderMagicNumber() == MagicNumber)
-			{
-				if(OrderSymbol()==aSymbol)
-				{
-					aprice = OrderOpenPrice();
-				}else if(OrderSymbol()==bSymbol)
-				{
-					bprice = OrderOpenPrice();
-				}else if(OrderSymbol()==cSymbol)
-				{
-					cprice = OrderOpenPrice();
-				}
-			}
-		}
-	}
-	fpi = aprice / (bprice * cprice);
-	return(fpi);
-} */
-
-/* getPrice()
- *
- * use for get three symbol bid and ask price;
- * calculate synthetic bid and ask;
- * calculate api
- *
- */
-/*void getPrice()
-{
-	RefreshRates();
-	//-- FPI
-	buyFPI  = MarketInfo(aSymbol, MODE_ASK) / (MarketInfo(bSymbol, MODE_BID) * MarketInfo(cSymbol, MODE_BID));
-	sellFPI = MarketInfo(aSymbol, MODE_BID) / (MarketInfo(bSymbol, MODE_ASK) * MarketInfo(cSymbol, MODE_ASK));
-	//-- buy FPI history
-	if(buy_hFPI==0 || buyFPI>buy_hFPI) buy_hFPI = buyFPI;
-	if(buy_lFPI==0 || buyFPI<buy_lFPI) buy_lFPI = buyFPI;
-	//-- sell FPI history
-	if(sell_hFPI==0 || sellFPI>sell_hFPI) sell_hFPI = sellFPI;
-	if(sell_lFPI==0 || sellFPI<sell_lFPI) sell_lFPI = sellFPI;
-	//-- spread
-	totalSpread = MarketInfo(aSymbol, MODE_SPREAD) + MarketInfo(bSymbol, MODE_SPREAD) + MarketInfo(cSymbol, MODE_SPREAD);
-}
-
 //-- 
-int countOrder()
-{
-	int countOrd = 0;
-	int total = OrdersTotal();
-
-	// if no order return 0
-	if(total==0)
-	{
-		return(0);
-	}
-	// if has order count that how many orders that order magic number = MagicNumber
-	for(int i = 0; i <= total; i++)
-	{
-		if (!OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
-		{
-			// todo - no select order
-		}
-		else
-		{
-			if(OrderMagicNumber() == MagicNumber)
-			{
-				countOrd++;
-			}
-		}
-	}
-
-	return(countOrd);
-}
-
-//-- check current ring's profit
-double checkProfit()
-{
-	double ringprofit = 0;
-	
-	for(int i = 0; i < OrdersTotal(); i++)
-	{
-		if (!OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
-		{
-			// todo - no select order
-		}
-		else
-		{
-			if(OrderMagicNumber() == MagicNumber)
-			{
-				ringprofit = ringprofit + OrderProfit() + OrderSwap() + OrderCommission();
-			}
-		}
-	}
-	
-	return(ringprofit);
-}
-
-
-
 int closeRing()
 {
 	int total = OrdersTotal();
@@ -1089,5 +839,3 @@ int closeRing()
 
 	return(0);
 }
-
-*/
