@@ -42,6 +42,8 @@
  * v0.1.16 [dev] 2012-11-25 remove the while() int start() func; change order comment info format add symbol number behind ring index;
  * v0.1.17 [dev] 2012-11-25 add ringHaveOrder() func use to check a ring have order or not; add updateRingInfo() func; finished checkCurrentOrder() func;
  * v0.1.18 [dev] 2012-11-26 debug func updateRingInfo() and checkCurrentOrder() bug; change default extern Magicnumber value;
+ * v0.1.19 [dev] 2012-11-26 fix some typo bug; ring info part can runable but not complete;
+ * 
  *
  *
  * @Todo
@@ -63,12 +65,12 @@ extern string 	TradeSetting 	= "---------Trade Setting--------";
 extern bool 	EnableTrade 	= true;
 extern bool 	Superaddition	= false;
 extern double 	BaseLots    	= 0.5;
-extern int 		MagicNumber 	= 99902;
+extern int 		MagicNumber 	= 99901;
 extern double 	BuyThold		= 0.9999;
 extern double 	SellThold 		= 1.0001;
 extern string 	BrokerSetting 	= "---------Broker Setting--------";
 extern int 		LotsDigit 		= 2;
-extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|";
+extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|";
 //extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|";
 
 
@@ -194,7 +196,7 @@ void initDebugInfo(string _ring[][])
 	int realringnum = ringnum - 1;
 	createTextObj("price_header", 25,	y, ">>>Ring(" + realringnum + ") & Price & FPI", titlecolor);
 	y += 15;
-	createTextObj("price_header_col_1", 25,	y, "Serial");
+	createTextObj("price_header_col_1", 25, y, "Serial");
 	createTextObj("price_header_col_2", 75, y, "SymbolA");
 	createTextObj("price_header_col_3", 145,y, "SymbolB");
 	createTextObj("price_header_col_4", 215,y, "SymbolC");
@@ -211,8 +213,8 @@ void initDebugInfo(string _ring[][])
 		y += 15;
 		for (j = 1; j < 4; j ++) 
 		{
-			createTextObj("price_body_row_" + i + "_col_1", 25,	y, i, Gray);
-			createTextObj("price_body_row_" + i + "_col_2", 75,	y, _ring[i,1], White);
+			createTextObj("price_body_row_" + i + "_col_1", 25, y, i, Gray);
+			createTextObj("price_body_row_" + i + "_col_2", 75, y, _ring[i,1], White);
 			createTextObj("price_body_row_" + i + "_col_3", 145,y, _ring[i,2], White);
 			createTextObj("price_body_row_" + i + "_col_4", 215,y, _ring[i,3], White);
 			createTextObj("price_body_row_" + i + "_col_5", 285,y);
@@ -321,7 +323,7 @@ void updateRingInfo(double _ringord[][])
 			setTextObj("order_body_row_" + i + "_col_5", DoubleToStr(_ringord[i][5], 2));
 			setTextObj("order_body_row_" + i + "_col_6", DoubleToStr(_ringord[i][6], 2));
 			setTextObj("order_body_row_" + i + "_col_7", DoubleToStr(_ringord[i][7], 2), DeepSkyBlue);
-			setTextObj("order_body_row_" + i + "_col_8", DoubleToStr(_ringord[i][8], 5));
+			setTextObj("order_body_row_" + i + "_col_8", DoubleToStr(_ringord[i][8], 8));
 		}
 		else
 		{
@@ -624,7 +626,7 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 	double c_lots = NormalizeDouble(BaseLots * _price[2], LotsDigit);
 
 	//-- open order a
-	ticketno[1] = OrderSend(Ring[_index][1], _direction, BaseLots, _price[1], 0, 0, 0, _index + "＃1" + commentText, MagicNumber);
+	ticketno[1] = OrderSend(Ring[_index][1], _direction, BaseLots, _price[1], 0, 0, 0, _index + "#1" + commentText, MagicNumber);
 	if(ticketno[1] <= 0)
 	{
 		if(_direction==0 && MarketInfo(Ring[_index][1], MODE_ASK) < _price[1])
@@ -642,7 +644,7 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 	}
 
 	//-- open order b
-	ticketno[2] = OrderSend(Ring[_index][2], b_c_direction, BaseLots, _price[2], 0, 0, 0, _index + "＃2" + commentText, MagicNumber);
+	ticketno[2] = OrderSend(Ring[_index][2], b_c_direction, BaseLots, _price[2], 0, 0, 0, _index + "#2" + commentText, MagicNumber);
 	if(ticketno[2] <= 0)
 	{
 		if(b_c_direction==0 && MarketInfo(Ring[_index][2], MODE_ASK) < _price[2])
@@ -658,7 +660,7 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 
 		limit_direction = b_c_direction + 2;
 
-		ticketno[2] = OrderSend(Ring[_index][2], limit_direction, BaseLots, _price[2], 0, 0, 0, _index + "＃2" + commentText, MagicNumber);
+		ticketno[2] = OrderSend(Ring[_index][2], limit_direction, BaseLots, _price[2], 0, 0, 0, _index + "#2" + commentText, MagicNumber);
 		if(ticketno[2] > 0)
 			outputLog("nst_ta - Second limit order opened. [" + Ring[_index][2] + "]", "Trading info");
 		else
@@ -666,7 +668,7 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 	}
 
 	//-- open order c
-	ticketno[3] = OrderSend(Ring[_index][3], b_c_direction, c_lots, _price[3], 0, 0, 0, _index + "＃3" + commentText, MagicNumber);
+	ticketno[3] = OrderSend(Ring[_index][3], b_c_direction, c_lots, _price[3], 0, 0, 0, _index + "#3" + commentText, MagicNumber);
 	if(ticketno[3] <= 0)
 	{
 		if(b_c_direction==0 && MarketInfo(Ring[_index][3], MODE_ASK) < _price[3])
@@ -682,7 +684,7 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 
 		limit_direction = b_c_direction + 2;
 		
-		ticketno[3] = OrderSend(Ring[_index][3], limit_direction, c_lots, _price[3], 0, 0, 0, _index + "＃3" + commentText, MagicNumber);
+		ticketno[3] = OrderSend(Ring[_index][3], limit_direction, c_lots, _price[3], 0, 0, 0, _index + "#3" + commentText, MagicNumber);
 		if(ticketno[3] > 0)
 			outputLog("nst_ta - Third limit order opened. [" + Ring[_index][3] + "]", "Trading info");
 		else
@@ -716,6 +718,7 @@ bool openRing(int _direction, int _index, double _price[], double _fpi)
 void checkCurrentOrder(double &_ringord[][])
 {
 	//-- init ring order array
+	ArrayResize(_ringord, 0);
 	ArrayResize(_ringord, 100);
 
 
@@ -734,10 +737,11 @@ void checkCurrentOrder(double &_ringord[][])
 		{
 			if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
 			{
-				if(OrderMagicNumber() == 99901)
+				if(OrderMagicNumber() == MagicNumber)
 				{
 					
 					getInfoByComment(OrderComment(), ringindex, symbolindex, ringdirection, ringfpi);
+					
 
 					//--
 					arridx = findRingOrdIdx(_ringord, ringindex, ringfpi);
@@ -794,16 +798,16 @@ bool ringHaveOrder(int _ringindex, double _ringord[][])
 }
 
 //-- get order information by order comment string
-void getInfoByComment(string _commont, int &_ringindex, int &_symbolindex, int &_direction, double &_fpi)
+void getInfoByComment(string _comment, int &_ringindex, int &_symbolindex, int &_direction, double &_fpi)
 {
-	int verticalchart = StringFind(_commont, "|", 0);
-	int atchart = StringFind(_commont, "@", verticalchart);
-	int sharpchart = StringFind(_commont, "#", 0);
+	int verticalchart = StringFind(_comment, "|", 0);
+	int atchart = StringFind(_comment, "@", verticalchart);
+	int sharpchart = StringFind(_comment, "#", 0);
 
-	_fpi = StrToDouble(StringSubstr(_commont, atchart+1, 0));
-	_direction = StrToDouble(StringSubstr(_commont, verticalchart+1, 1));
-	_ringindex = StrToInteger(StringSubstr(_commont, 0, sharpchart));
-	_symbolindex = StrToInteger(StringSubstr(_commont, sharpchart+1, 1));
+	_fpi = StrToDouble(StringSubstr(_comment, atchart+1, 0));
+	_direction = StrToDouble(StringSubstr(_comment, verticalchart+1, 1));
+	_ringindex = StrToInteger(StringSubstr(_comment, 0, sharpchart));
+	_symbolindex = StrToInteger(StringSubstr(_comment, sharpchart+1, 1));
 }
 
 //-- 
