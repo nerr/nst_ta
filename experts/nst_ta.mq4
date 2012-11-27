@@ -586,7 +586,7 @@ void getFPI(double &_fpi[][])
 		//-- sell fpi
 		_fpi[i][3] = _price[1] / (_price[2] * _price[3]);
 		//-- check sell chance
-		if(_fpi[i][6] > 0 &&_fpi[i][3] >= _fpi[i][7] && EnableTrade == true && (ringHaveOrder(ringnum, RingOrd) == false || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
+		if(_fpi[i][6] > 0 &&_fpi[i][3] >= _fpi[i][6] && EnableTrade == true && (ringHaveOrder(ringnum, RingOrd) == false || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
 		{
 			openRing(1, i, _price, _fpi[i][3]);
 		}
