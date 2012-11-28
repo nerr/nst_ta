@@ -46,6 +46,7 @@
  * v0.1.20 [dev] 2012-11-26 finished auto get thold value and remove extern about thold item;
  * v0.1.21 [dev] 2012-11-28 fix special symbol name bug;
  * v0.1.22 [dev] 2012-11-29 fix a small bug but it deadly, revised ringHaveOrder() first param;
+ * v0.1.23 [dev] 2012-11-29 simplify code and change extern item "Currencies" default value;
  *
  *
  * @Todo
@@ -75,7 +76,8 @@ extern double 	BaseLots    	= 0.5;
 extern int 		MagicNumber 	= 99901;
 extern string 	BrokerSetting 	= "---------Broker Setting--------";
 extern int 		LotsDigit 		= 2;
-extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|RON|XAU|XAG|";
+extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|RON|";
+//"EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|RON|XAU|XAG|"
 
 
 
