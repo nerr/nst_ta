@@ -61,3 +61,39 @@ int start()
 {
 	return(0);
 }
+
+
+
+//-- 
+int closeRing()
+{
+	int total = OrdersTotal();
+	for(int i=total-1; i>=0; i--)
+	{
+		OrderSelect(i, SELECT_BY_POS);
+		int type   = OrderType();
+
+		bool result = false;
+
+		if(OrderMagicNumber() == MagicNumber)
+		{
+			switch(type)
+			{
+				//Close opened long positions
+				case OP_BUY       : result = OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_BID), 3, Red );
+				break;
+				//Close opened short positions
+				case OP_SELL      : result = OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_ASK), 3, Red );
+			}
+		}
+
+		if(result == false)
+		{
+			Alert("Order " , OrderTicket() , " failed to close. Error:" , GetLastError() );
+			closeRing();
+			Sleep(300);
+		}
+	}
+
+	return(0);
+}
