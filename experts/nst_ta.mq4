@@ -44,6 +44,7 @@
  * v0.1.18 [dev] 2012-11-26 debug func updateRingInfo() and checkCurrentOrder() bug; change default extern Magicnumber value;
  * v0.1.19 [dev] 2012-11-26 fix some typo bug; ring info part can runable but not complete;
  * v0.1.20 [dev] 2012-11-26 finished auto get thold value and remove extern about thold item;
+ * v0.1.21 [dev] 2012-11-28 fix special symbol name bug;
  *
  *
  * @Todo
@@ -91,7 +92,9 @@ int ringnum;
 //-- init
 int init()
 {
-	
+	if(StringLen(Symbol()) > 6)
+		SymExt = StringSubstr(Symbol(),6);
+
 	int i, j;
 
 	//-- get rings
@@ -103,17 +106,6 @@ int init()
 	ArrayResize(RingOrd, ringnum);
 	ArrayResize(Thold, ringnum);
 	ArrayResize(RingM, ringnum);
-
-	//-- Fix Symbol Names for all Brokers
-	if(StringLen(Symbol()) > 6)
-	{
-		SymExt = StringSubstr(Symbol(),6);
-		for(i = 1; i < ringnum; i ++)
-		{
-			for(j = 1; j < 4; j ++) 
-				Ring[i,j] = Ring[i,j] + SymExt;
-		}
-	}
 
 	//-- initDebugInfo
 	initDebugInfo(Ring);
@@ -389,11 +381,11 @@ string findAvailableRing(string &_ring[][])
 		{
 			if(i != j && avasymbols[i][0] == avasymbols[j][0] && avasymbols[i][1] != avasymbols[j][1])
 			{
-				if(MarketInfo(avasymbols[j][1] + avasymbols[i][1], MODE_ASK) > 0)
+				if(MarketInfo(avasymbols[j][1] + avasymbols[i][1] + SymExt, MODE_ASK) > 0)
 				{
-					_ring[n][1] = avasymbols[i][0] + avasymbols[i][1];
-					_ring[n][2] = avasymbols[j][0] + avasymbols[j][1];
-					_ring[n][3] = avasymbols[j][1] + avasymbols[i][1];
+					_ring[n][1] = avasymbols[i][0] + avasymbols[i][1] + SymExt;
+					_ring[n][2] = avasymbols[j][0] + avasymbols[j][1] + SymExt;
+					_ring[n][3] = avasymbols[j][1] + avasymbols[i][1] + SymExt;
 					n++;
 				}
 			}
@@ -420,7 +412,7 @@ string findAvailableSymbol(string &_symbols[][])
 		{
 			if(i != j)
 			{
-				if(MarketInfo(currencyarr[i]+currencyarr[j], MODE_ASK) > 0)
+				if(MarketInfo(currencyarr[i]+currencyarr[j] + SymExt, MODE_ASK) > 0)
 				{
 					_symbols[n][0] = currencyarr[i];
 					_symbols[n][1] = currencyarr[j];
