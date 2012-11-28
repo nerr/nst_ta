@@ -16,7 +16,6 @@
 
 
 //--
-#include <nst_public.mqh>
 #include <nst_ta_public.mqh>
 
 
