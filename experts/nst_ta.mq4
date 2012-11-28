@@ -45,6 +45,7 @@
  * v0.1.19 [dev] 2012-11-26 fix some typo bug; ring info part can runable but not complete;
  * v0.1.20 [dev] 2012-11-26 finished auto get thold value and remove extern about thold item;
  * v0.1.21 [dev] 2012-11-28 fix special symbol name bug;
+ * v0.1.22 [dev] 2012-11-29 fix a small bug but it deadly, revised ringHaveOrder() first param;
  *
  *
  * @Todo
@@ -437,7 +438,7 @@ void getFPI(double &_fpi[][])
 		//-- buy fpi
 		_fpi[i][1] = _price[1] / (_price[2] * _price[3]);
 		//-- check buy chance
-		if(_fpi[i][1] <= _fpi[i][5] && EnableTrade == true && (ringHaveOrder(ringnum, RingOrd) == false || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
+		if(_fpi[i][1] <= _fpi[i][5] && EnableTrade == true && (ringHaveOrder(i, RingOrd) == false || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
 		{
 			openRing(0, i, _price, _fpi[i][1]);
 		}
@@ -451,7 +452,7 @@ void getFPI(double &_fpi[][])
 		//-- sell fpi
 		_fpi[i][3] = _price[1] / (_price[2] * _price[3]);
 		//-- check sell chance
-		if(_fpi[i][6] > 0 &&_fpi[i][3] >= _fpi[i][6] && EnableTrade == true && (ringHaveOrder(ringnum, RingOrd) == false || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
+		if(_fpi[i][6] > 0 && _fpi[i][3] >= _fpi[i][6] && EnableTrade == true && (ringHaveOrder(i, RingOrd) == false || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
 		{
 			openRing(1, i, _price, _fpi[i][3]);
 		}
