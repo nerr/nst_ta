@@ -32,16 +32,6 @@ It is a arbitrage script for Metatrader 4 base on Triangular Arbitrage strategy.
 		<td>use to tag the order opened by this EA</td>
 	</tr>
 	<tr>
-		<td>BuyThold</td>
-		<td>0.9999</td>
-		<td>the value use to thold the buy ring</td>
-	</tr>
-	<tr>
-		<td>SellThold</td>
-		<td>1.0001</td>
-		<td>the value use to thold the sell ring</td>
-	</tr>
-	<tr>
 		<td>LotsDigit</td>
 		<td>2</td>
 		<td>if your account allow min lots 0.1 only please set the value to 1, else do not change</td>
