@@ -180,13 +180,6 @@ void initDebugInfo(string _ring[][])
 		ObjectSet("bg_"+bgnum, OBJPROP_BACK, false);
 		ObjectSet("bg_"+bgnum, OBJPROP_XDISTANCE, 20 + bgnum % 2 * 400);
 		ObjectSet("bg_"+bgnum, OBJPROP_YDISTANCE, 13 + bgnum / 2 * 387);
-
-/*		boxnum = bgnum + 1;
-		ObjectCreate("bg_"+boxnum, OBJ_LABEL, 0, 0, 0);
-		ObjectSetText("bg_"+boxnum, "g", 300, "Webdings", bgcolor);
-		ObjectSet("bg_"+boxnum, OBJPROP_BACK, false);
-		ObjectSet("bg_"+boxnum, OBJPROP_XDISTANCE, 420);
-		ObjectSet("bg_"+boxnum, OBJPROP_YDISTANCE, 13 + bgnum * 390);*/
 	}
 
 	//-- broker price table header
