@@ -68,8 +68,7 @@ extern double 	BaseLots    	= 0.5;
 extern int 		MagicNumber 	= 99901;
 extern string 	BrokerSetting 	= "---------Broker Setting--------";
 extern int 		LotsDigit 		= 2;
-extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|";
-//extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|";
+extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|RON|XAU|XAG|";
 
 
 
