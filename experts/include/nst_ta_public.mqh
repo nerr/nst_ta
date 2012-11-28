@@ -158,3 +158,36 @@ bool openRing(int _direction, int _index, double _price[], double _fpi, string _
 
 	return(true);
 }
+
+
+//-- check unavailable symbol of current broker
+void checkUnavailableSymbol(string _ring[][], string &_Ring[][], int _ringnum)
+{
+	int range = ArrayRange(_ring, 0);
+	ArrayResize(_Ring, range);
+	_ringnum = 0;
+
+	//-- check unavailable symbol
+	for(int i = 1; i < range; i ++)
+	{
+		for(int j = 1; j < 4; j ++)
+		{
+			MarketInfo(_ring[i][j], MODE_ASK);
+			if(GetLastError() == 4106)
+			{
+				outputLog("This broker do not support symbol [" + _ring[i][j] + "]", "Information");
+				break;
+			}
+			if(j==3) 
+			{
+				_ringnum++;
+				_Ring[_ringnum][1] = _ring[i][1];
+				_Ring[_ringnum][2] = _ring[i][2];
+				_Ring[_ringnum][3] = _ring[i][3];
+			}
+		}
+	}
+
+	_ringnum++;
+	ArrayResize(_Ring, _ringnum);
+}
