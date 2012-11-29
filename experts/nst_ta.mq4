@@ -47,6 +47,7 @@
  * v0.1.21 [dev] 2012-11-28 fix special symbol name bug;
  * v0.1.22 [dev] 2012-11-29 fix a small bug but it deadly, revised ringHaveOrder() first param;
  * v0.1.23 [dev] 2012-11-29 simplify code and change extern item "Currencies" default value;
+ * v0.1.24 [dev] 2012-11-29 add remove all object item in initDebugInfo() func;
  *
  *
  * @Todo
@@ -152,6 +153,8 @@ int start()
 //-- init debug info object on chart
 void initDebugInfo(string _ring[][])
 {
+	ObjectsDeleteAll();
+
 	color bgcolor = C'0x27,0x28,0x22';
 	color titlecolor = C'0xd9,0x26,0x59';
 	int y, i, j;
