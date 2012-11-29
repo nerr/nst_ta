@@ -135,7 +135,7 @@ int start()
 
 	updateDubugInfo(FPI);
 
-	updateRingInfo(RingOrd);
+	//updateRingInfo(RingOrd);
 
 	updateSettingInfo();
 
@@ -211,34 +211,6 @@ void initDebugInfo(string _ring[][])
 	createTextObj("setting_body_row_1_col_4", 225,	y);
 	createTextObj("setting_body_row_1_col_5", 285,	y, "BaseLots:");
 	createTextObj("setting_body_row_1_col_6", 355,	y);
-
-	//-- ring info
-	y += 15 * 2;
-	createTextObj("ring_header", 25,	y, ">>>Ring", titlecolor);
-	y += 15;
-	createTextObj("order_header_col_0", 25, y, "RingId");
-	createTextObj("order_header_col_1", 100,y, "OrderA");
-	createTextObj("order_header_col_2", 200,y, "OrderB");
-	createTextObj("order_header_col_3", 300,y, "OrderC");
-	createTextObj("order_header_col_4", 400,y, "ProfitA");
-	createTextObj("order_header_col_5", 475,y, "ProfitB");
-	createTextObj("order_header_col_6", 550,y, "ProfitC");
-	createTextObj("order_header_col_7", 625,y, "Summary");
-	createTextObj("order_header_col_8", 700,y, "FPI");
-
-	for(i = 0; i < 50; i ++)
-	{
-		y += 15;
-		createTextObj("order_body_row_" + i + "_col_0", 25, y);
-		createTextObj("order_body_row_" + i + "_col_1", 100,y);
-		createTextObj("order_body_row_" + i + "_col_2", 200,y);
-		createTextObj("order_body_row_" + i + "_col_3", 300,y);
-		createTextObj("order_body_row_" + i + "_col_4", 400,y);
-		createTextObj("order_body_row_" + i + "_col_5", 475,y);
-		createTextObj("order_body_row_" + i + "_col_6", 550,y);
-		createTextObj("order_body_row_" + i + "_col_7", 625,y);
-		createTextObj("order_body_row_" + i + "_col_8", 700,y);
-	}
 }
 
 //--  update new debug info to chart
@@ -274,57 +246,6 @@ void updateSettingInfo()
 	setTextObj("setting_body_row_1_col_6", DoubleToStr(BaseLots, LotsDigit));
 }
 
-//-- update ring order information to chart
-void updateRingInfo(double _ringord[][])
-{
-	int i, j;
-	int row = ArrayRange(_ringord, 0);
-	int col= ArrayRange(_ringord, 1);
-
-	for(i = 0; i < row; i ++)
-	{
-		if(_ringord[i][0] > 0)
-		{
-			setTextObj("order_body_row_" + i + "_col_0", DoubleToStr(_ringord[i][0], 0));
-			setTextObj("order_body_row_" + i + "_col_1", DoubleToStr(_ringord[i][1], 0));
-			setTextObj("order_body_row_" + i + "_col_2", DoubleToStr(_ringord[i][2], 0));
-			setTextObj("order_body_row_" + i + "_col_3", DoubleToStr(_ringord[i][3], 0));
-			setTextObj("order_body_row_" + i + "_col_4", DoubleToStr(_ringord[i][4], 2));
-			setTextObj("order_body_row_" + i + "_col_5", DoubleToStr(_ringord[i][5], 2));
-			setTextObj("order_body_row_" + i + "_col_6", DoubleToStr(_ringord[i][6], 2));
-			setTextObj("order_body_row_" + i + "_col_7", DoubleToStr(_ringord[i][7], 2), DeepSkyBlue);
-			setTextObj("order_body_row_" + i + "_col_8", DoubleToStr(_ringord[i][8], 8));
-		}
-		else
-		{
-			for(j = 0; j < col; j++)
-			{
-				setTextObj("order_body_row_" + i + "_col_" + j, "");
-			}
-		}
-	}
-}
-
-//-- create text object
-void createTextObj(string objName, int xDistance, int yDistance, string objText="", color fontcolor=GreenYellow, string font="Courier New", int fontsize=9)
-{
-	if(ObjectFind(objName)<0)
-	{
-		ObjectCreate(objName, OBJ_LABEL, 0, 0, 0);
-		ObjectSetText(objName, objText, fontsize, font, fontcolor);
-		ObjectSet(objName, OBJPROP_XDISTANCE,	xDistance);
-		ObjectSet(objName, OBJPROP_YDISTANCE, 	yDistance);
-	}
-}
-
-//-- set text object new value
-void setTextObj(string objName, string objText="", color fontcolor=White, string font="Courier New", int fontsize=9)
-{
-	if(ObjectFind(objName)>-1)
-	{
-		ObjectSetText(objName, objText, fontsize, font, fontcolor);
-	}
-}
 
 
 
