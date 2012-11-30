@@ -48,6 +48,7 @@
  * v0.1.22 [dev] 2012-11-29 fix a small bug but it deadly, revised ringHaveOrder() first param;
  * v0.1.23 [dev] 2012-11-29 simplify code and change extern item "Currencies" default value;
  * v0.1.24 [dev] 2012-11-29 add remove all object item in initDebugInfo() func;
+ * v0.1.25 [dev] 2012-11-29 mv order management funcs to nst_ta_public.mq4;
  *
  *
  * @Todo
@@ -130,13 +131,9 @@ int deinit()
 //-- start
 int start()
 {
-	checkCurrentOrder(RingOrd);
-
 	getFPI(FPI);
 
 	updateDubugInfo(FPI);
-
-	//updateRingInfo(RingOrd);
 
 	updateSettingInfo();
 
@@ -272,7 +269,7 @@ void getFPI(double &_fpi[][])
 		//-- buy fpi
 		_fpi[i][1] = _price[1] / (_price[2] * _price[3]);
 		//-- check buy chance
-		if(_fpi[i][1] <= _fpi[i][5] && EnableTrade == true && (ringHaveOrder(i, RingOrd) == false || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
+		if(_fpi[i][1] <= _fpi[i][5] && EnableTrade == true && (ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
 		{
 			openRing(0, i, _price, _fpi[i][1], Ring, MagicNumber, BaseLots, LotsDigit);
 		}
@@ -286,7 +283,7 @@ void getFPI(double &_fpi[][])
 		//-- sell fpi
 		_fpi[i][3] = _price[1] / (_price[2] * _price[3]);
 		//-- check sell chance
-		if(_fpi[i][6] > 0 && _fpi[i][3] >= _fpi[i][6] && EnableTrade == true && (ringHaveOrder(i, RingOrd) == false || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
+		if(_fpi[i][6] > 0 && _fpi[i][3] >= _fpi[i][6] && EnableTrade == true && (ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
 		{
 			openRing(1, i, _price, _fpi[i][3], Ring, MagicNumber, BaseLots, LotsDigit);
 		}
@@ -307,118 +304,33 @@ void getFPI(double &_fpi[][])
 	}
 }
 
-
-
-/*
- * Order management funcs
- *
- */
-
-//-- check current order
-/* array RingOrd format
- * RingOrd[x, ]
- * [0] ring index
- * [1] a order ticket
- * [2] b order ticket
- * [3] c order ticket
- * [4] a order real profit
- * [5] b order real profit
- * [6] c order real profit
- * [7] ring summary profit
- * [8] fpi
- * [9] 
- */
-void checkCurrentOrder(double &_ringord[][])
+//-- check ring have order or not by ring index number
+bool ringHaveOrder(int _ringindex)
 {
-	//-- init ring order array
-	ArrayResize(_ringord, 0);
-	ArrayResize(_ringord, 100);
-
-
-	double ringfpi;
-	int i, j, ringindex, ringdirection, symbolindex, arridx, n;
 	int total = OrdersTotal();
-	//string 
+	int ringidx = 0;
+	string comm = "";
 
 	if(total == 0)
-	{
-		ArrayResize(_ringord, 0);
-	}
+		return(false);
 	else
 	{
-		for(i = 0; i <= total; i++)
+		for(int i = 0; i < total; i++)
 		{
+			comm = "";
 			if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
 			{
 				if(OrderMagicNumber() == MagicNumber)
 				{
+					comm = OrderComment();
 					
-					getInfoByComment(OrderComment(), ringindex, symbolindex, ringdirection, ringfpi);
-					
-
-					//--
-					arridx = findRingOrdIdx(_ringord, ringindex, ringfpi);
-					if(arridx == -1)
-					{
-						
-						_ringord[n][0] = ringindex;
-						_ringord[n][8] = ringfpi;
-						_ringord[n][symbolindex] = OrderTicket();
-						_ringord[n][symbolindex+3] = OrderProfit() + OrderSwap() + OrderCommission();
-						n++;
-					}
-					else
-					{
-						_ringord[arridx][symbolindex] = OrderTicket();
-						_ringord[arridx][symbolindex+3] = OrderProfit() + OrderSwap() + OrderCommission();
-					}
+					ringidx = StrToInteger(StringSubstr(comm, 0, StringFind(comm, "#", 0)));
+					if(ringidx == _ringindex)
+						return(true);
 				}
 			}
 		}
-
-		ArrayResize(_ringord, n);
-		for(i = 0; i < n; i++)
-		{
-			_ringord[i][7] = _ringord[i][4] + _ringord[i][5] + _ringord[i][6];
-		}
-	}
-}
-
-//-- check ring order have ring index or not
-int findRingOrdIdx(double _ringord[][], int _ringindex, double _fpi)
-{
-	int size = ArrayRange(_ringord, 0);
-	for(int i = 0; i < size; i++)
-	{
-		if(_ringord[i][0] == _ringindex && _ringord[i][8] == _fpi)
-			return(i);
-	}
-	return(-1);
-}
-
-//-- check ring have order or not by ring index number
-bool ringHaveOrder(int _ringindex, double _ringord[][])
-{
-	int numberofring = ArrayRange(_ringord, 0);
-
-	for(int i = 0; i < numberofring; i++)
-	{
-		if(_ringord[i][0] == _ringindex)
-			return(true);
 	}
 
 	return(false);
-}
-
-//-- get order information by order comment string
-void getInfoByComment(string _comment, int &_ringindex, int &_symbolindex, int &_direction, double &_fpi)
-{
-	int verticalchart = StringFind(_comment, "|", 0);
-	int atchart = StringFind(_comment, "@", verticalchart);
-	int sharpchart = StringFind(_comment, "#", 0);
-
-	_fpi = StrToDouble(StringSubstr(_comment, atchart+1, 0));
-	_direction = StrToDouble(StringSubstr(_comment, verticalchart+1, 1));
-	_ringindex = StrToInteger(StringSubstr(_comment, 0, sharpchart));
-	_symbolindex = StrToInteger(StringSubstr(_comment, sharpchart+1, 1));
 }
