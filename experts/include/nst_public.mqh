@@ -16,9 +16,9 @@ void outputLog(string _logtext, string _type="Information")
 }
 
 //-- send alert
-void sendAlert(string _text = "null")
+void sendAlert(string _text = "null", string _type="Information")
 {
-	outputLog(_text);
+	outputLog(_text, _type);
 	PlaySound("alert.wav");
 	Alert(_text);
 }
