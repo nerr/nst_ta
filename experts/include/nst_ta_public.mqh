@@ -191,3 +191,36 @@ void checkUnavailableSymbol(string _ring[][], string &_Ring[][], int _ringnum)
 	_ringnum++;
 	ArrayResize(_Ring, _ringnum);
 }
+
+
+
+/*
+ * Order management funcs
+ *
+ */
+
+
+//-- check ring order have ring index or not
+int findRingOrdIdx(int _roticket[][], double _roprofit[][], int _ringindex, double _fpi)
+{
+	int size = ArrayRange(_roticket, 0);
+	for(int i = 0; i < size; i++)
+	{
+		if(_roticket[i][0] == _ringindex && _roprofit[i][5] == _fpi)
+			return(i);
+	}
+	return(-1);
+}
+
+//-- get order information by order comment string
+void getInfoByComment(string _comment, int &_ringindex, int &_symbolindex, int &_direction, double &_fpi)
+{
+	int verticalchart 	= StringFind(_comment, "|", 0);
+	int atchart 		= StringFind(_comment, "@", 0);
+	int sharpchart 		= StringFind(_comment, "#", 0);
+
+	_fpi 		= StrToDouble(StringSubstr(_comment, atchart+1));
+	_direction 	= StrToDouble(StringSubstr(_comment, verticalchart+1, 1));
+	_ringindex 	= StrToInteger(StringSubstr(_comment, 0, sharpchart));
+	_symbolindex= StrToInteger(StringSubstr(_comment, sharpchart+1, 1));
+}
