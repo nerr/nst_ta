@@ -49,6 +49,7 @@
  * v0.1.23 [dev] 2012-11-29 simplify code and change extern item "Currencies" default value;
  * v0.1.24 [dev] 2012-11-29 add remove all object item in initDebugInfo() func;
  * v0.1.25 [dev] 2012-11-29 mv order management funcs to nst_ta_public.mq4;
+ * v0.1.26 [dev] 2012-12-03 restructure "initDubugChart()" func;
  *
  *
  * @Todo
@@ -142,113 +143,6 @@ int start()
 
 
 
-/* 
- * Debug Funcs
- *
- */
-
-//-- init debug info object on chart
-void initDebugInfo(string _ring[][])
-{
-	ObjectsDeleteAll();
-
-	color bgcolor = C'0x27,0x28,0x22';
-	color titlecolor = C'0xd9,0x26,0x59';
-	int y, i, j;
-
-	//-- background
-	for(int bgnum = 0; bgnum < 8; bgnum++)
-	{
-		ObjectCreate("bg_"+bgnum, OBJ_LABEL, 0, 0, 0);
-		ObjectSetText("bg_"+bgnum, "g", 300, "Webdings", bgcolor);
-		ObjectSet("bg_"+bgnum, OBJPROP_BACK, false);
-		ObjectSet("bg_"+bgnum, OBJPROP_XDISTANCE, 20 + bgnum % 2 * 400);
-		ObjectSet("bg_"+bgnum, OBJPROP_YDISTANCE, 13 + bgnum / 2 * 387);
-	}
-
-	//-- broker price table header
-	y += 15;
-	int realringnum = ringnum - 1;
-	createTextObj("price_header", 25,	y, ">>>Ring(" + realringnum + ") & Price & FPI", titlecolor);
-	y += 15;
-	createTextObj("price_header_col_1", 25, y, "Serial");
-	createTextObj("price_header_col_2", 75, y, "SymbolA");
-	createTextObj("price_header_col_3", 145,y, "SymbolB");
-	createTextObj("price_header_col_4", 215,y, "SymbolC");
-	createTextObj("price_header_col_5", 285,y, "bFPI");
-	createTextObj("price_header_col_6", 375,y, "bLowest");
-	createTextObj("price_header_col_7", 465,y, "sFPI");
-	createTextObj("price_header_col_8", 555,y, "sHighest");
-	createTextObj("price_header_col_9", 645,y, "bThold");
-	createTextObj("price_header_col_10",735,y, "sThold");
-
-	//-- broker price table body
-	for(i = 1; i < ringnum; i ++)
-	{
-		y += 15;
-		for (j = 1; j < 4; j ++) 
-		{
-			createTextObj("price_body_row_" + i + "_col_1", 25, y, i, Gray);
-			createTextObj("price_body_row_" + i + "_col_2", 75, y, _ring[i,1], White);
-			createTextObj("price_body_row_" + i + "_col_3", 145,y, _ring[i,2], White);
-			createTextObj("price_body_row_" + i + "_col_4", 215,y, _ring[i,3], White);
-			createTextObj("price_body_row_" + i + "_col_5", 285,y);
-			createTextObj("price_body_row_" + i + "_col_6", 375,y);
-			createTextObj("price_body_row_" + i + "_col_7", 465,y);
-			createTextObj("price_body_row_" + i + "_col_8", 555,y);
-			createTextObj("price_body_row_" + i + "_col_9", 645,y);
-			createTextObj("price_body_row_" + i + "_col_10",735,y);
-		}
-	}
-
-	//-- settings info
-	y += 15 * 2;
-	createTextObj("setting_header", 25,	y, ">>>Settings", titlecolor);
-	y += 15;
-	createTextObj("setting_body_row_1_col_1", 25,	y, "Trade:");
-	createTextObj("setting_body_row_1_col_2", 70,	y);
-	createTextObj("setting_body_row_1_col_3", 125,	y, "Superaddition:");
-	createTextObj("setting_body_row_1_col_4", 225,	y);
-	createTextObj("setting_body_row_1_col_5", 285,	y, "BaseLots:");
-	createTextObj("setting_body_row_1_col_6", 355,	y);
-}
-
-//--  update new debug info to chart
-void updateDubugInfo(double _fpi[][])
-{
-	int digit = Digits;
-
-	for(int i = 1; i < ringnum; i++)	//-- row 5 to row 10
-	{
-		for(int j = 5; j < 11; j++)
-		{
-			if(j==5 || j==7)
-				setTextObj("price_body_row_" + i + "_col_" + j, _fpi[i][j-4], DeepSkyBlue);
-			else
-				setTextObj("price_body_row_" + i + "_col_" + j, _fpi[i][j-4]);
-		}
-	}
-}
-
-//--  update Setting info to chart
-void updateSettingInfo()
-{
-	string settingstatus = "Disable";
-	if(EnableTrade==true)
-		settingstatus = "Enable";
-	setTextObj("setting_body_row_1_col_2", settingstatus);
-	
-	settingstatus = "Disable";
-	if(Superaddition==true)
-		settingstatus = "Enable";
-	setTextObj("setting_body_row_1_col_4", settingstatus);
-	
-	setTextObj("setting_body_row_1_col_6", DoubleToStr(BaseLots, LotsDigit));
-}
-
-
-
-
 /*
  * Trade funcs
  *
@@ -333,4 +227,98 @@ bool ringHaveOrder(int _ringindex)
 	}
 
 	return(false);
+}
+
+
+
+/* 
+ * Debug Funcs
+ *
+ */
+
+//-- init debug info object on chart
+void initDebugInfo(string _ring[][])
+{
+	ObjectsDeleteAll();
+
+	color bgcolor = C'0x27,0x28,0x22';
+	color titlecolor = C'0xd9,0x26,0x59';
+	int y, i, j;
+
+	//-- background
+	for(int bgnum = 0; bgnum < 8; bgnum++)
+	{
+		ObjectCreate("bg_"+bgnum, OBJ_LABEL, 0, 0, 0);
+		ObjectSetText("bg_"+bgnum, "g", 300, "Webdings", bgcolor);
+		ObjectSet("bg_"+bgnum, OBJPROP_BACK, false);
+		ObjectSet("bg_"+bgnum, OBJPROP_XDISTANCE, 20 + bgnum % 2 * 400);
+		ObjectSet("bg_"+bgnum, OBJPROP_YDISTANCE, 13 + bgnum / 2 * 387);
+	}
+
+	//-- broker price table header
+	string priceTableHeaderName[11] = {"", "Num", "SymbolA", "SymbolB", "SymbolC", "lFPI", "lLowest", "sFPI", "sHighest", "lThold", "sThold"};
+	int    priceTableHeaderY[11]    = {0, 25, 75, 145, 215, 285, 375, 465, 555, 645, 735};
+	y += 15;
+	int realringnum = ringnum - 1;
+	createTextObj("price_header", 25,	y, ">>>Ring(" + realringnum + ") & Price & FPI", titlecolor);
+	y += 15;
+	for(i = 1; i < 12; i++)
+		createTextObj("price_header_col_" + i, priceTableHeaderY[i], y, priceTableHeaderName[i]);
+
+	//-- broker price table body
+	for(i = 1; i < ringnum; i ++)
+	{
+		y += 15;
+		for (j = 1; j < 4; j ++) 
+		{
+			createTextObj("price_body_row_" + i + "_col_1", 25, y, i, Gray);
+			createTextObj("price_body_row_" + i + "_col_2", 75, y, _ring[i,1], White);
+			createTextObj("price_body_row_" + i + "_col_3", 145,y, _ring[i,2], White);
+			createTextObj("price_body_row_" + i + "_col_4", 215,y, _ring[i,3], White);
+		}
+		for(j = 5; i < 11; i++)
+			createTextObj("price_body_row_" + i + "_col_" + j, priceTableHeaderY[i], y);
+	}
+
+	//-- settings info
+	string settingTableHeaderName[6] = {"", "Trade", "", "Superaddition:", "",  "BaseLots:", ""};
+	int    settingTableHeaderY[6] = {0, 25, 70, 125, 225, 285, 355};
+	y += 15 * 2;
+	createTextObj("setting_header", 25,	y, ">>>Settings", titlecolor);
+	y += 15;
+	for(i = 1; i < 7; i++)
+		createTextObj("setting_body_row_1_col_" + i, settingTableHeaderName[i], y, settingTableHeaderY[i]);
+}
+
+//--  update new debug info to chart
+void updateDubugInfo(double _fpi[][])
+{
+	int digit = Digits;
+
+	for(int i = 1; i < ringnum; i++)	//-- row 5 to row 10
+	{
+		for(int j = 5; j < 11; j++)
+		{
+			if(j==5 || j==7)
+				setTextObj("price_body_row_" + i + "_col_" + j, _fpi[i][j-4], DeepSkyBlue);
+			else
+				setTextObj("price_body_row_" + i + "_col_" + j, _fpi[i][j-4]);
+		}
+	}
+}
+
+//--  update Setting info to chart
+void updateSettingInfo()
+{
+	string settingstatus = "Disable";
+	if(EnableTrade==true)
+		settingstatus = "Enable";
+	setTextObj("setting_body_row_1_col_2", settingstatus);
+	
+	settingstatus = "Disable";
+	if(Superaddition==true)
+		settingstatus = "Enable";
+	setTextObj("setting_body_row_1_col_4", settingstatus);
+	
+	setTextObj("setting_body_row_1_col_6", DoubleToStr(BaseLots, LotsDigit));
 }
