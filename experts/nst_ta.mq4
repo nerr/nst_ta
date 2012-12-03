@@ -91,7 +91,10 @@ extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PL
 
 string Ring[200, 4], SymExt;
 double FPI[1, 8], RingOrd[1, 10], Thold[1, 2], RingM[1, 4];
-int ringnum;
+int    ringnum;
+int    orderTableHeaderX[10]    = {790, 815, 875, 935, 995, 1060, 1130, 1200, 1270, 1330};
+int    ROTicket[100, 5]; //-- ringindex， a, b, c, direction
+double ROProfit[100, 6]; //-- total, a, b, c, target, ringfpi
 
 
 
@@ -137,6 +140,10 @@ int start()
 	updateDubugInfo(FPI);
 
 	updateSettingInfo();
+
+	checkCurrentOrder(MagicNumber, ROTicket, ROProfit);
+
+	updateRingInfo(ROTicket, ROProfit);
 
 	return(0);
 }
@@ -231,6 +238,86 @@ bool ringHaveOrder(int _ringindex)
 
 
 
+//-- check current order
+void checkCurrentOrder(int _magicnumber, int &_roticket[][], double &_roprofit[][])
+{
+	//-- init ring order array
+	ArrayResize(_roticket, 0);
+	ArrayResize(_roticket, 100);
+
+	ArrayResize(_roprofit, 0);
+	ArrayResize(_roprofit, 100);
+
+	double ringfpi;
+	int i, j, ringindex, ringdirection, symbolindex, arridx, n = 0;
+	int total = OrdersTotal();
+
+	//-- begin
+	if(total == 0)
+	{
+		ArrayResize(_roprofit, 0);
+		ArrayResize(_roticket, 0);
+	}
+	else
+	{
+		for(i = 0; i < total; i++)
+		{
+			if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+			{
+				if(OrderMagicNumber() == _magicnumber)
+				{
+					//-- analytic comment information
+					getInfoByComment(OrderComment(), ringindex, symbolindex, ringdirection, ringfpi);
+					//Alert(" ri:"+ringindex+" si:"+symbolindex+" rd:"+ringdirection+" rf:"+ringfpi);
+					//--
+					arridx = findRingOrdIdx(_roticket, _roprofit, ringindex, ringfpi);
+					//Alert(arridx);
+
+					if(arridx == -1)
+					{
+						_roticket[n][0] = ringindex;
+						_roticket[n][4] = ringdirection;
+						_roticket[n][symbolindex] = OrderTicket();
+
+						_roprofit[n][5] = ringfpi;
+						_roprofit[n][symbolindex] = OrderProfit() + OrderSwap() + OrderCommission();
+						_roprofit[n][0] += _roprofit[n][symbolindex];
+
+						if(symbolindex==1)
+							_roprofit[n][4] = OrderLots();
+
+						n++;
+					}
+					else
+					{
+						_roticket[arridx][symbolindex] = OrderTicket();
+
+						_roprofit[arridx][symbolindex] = OrderProfit() + OrderSwap() + OrderCommission();
+						_roprofit[arridx][0] += _roprofit[arridx][symbolindex];
+
+						if(symbolindex==1)
+							_roprofit[arridx][4] = OrderLots();
+					}
+				}
+			}
+		}
+
+		ArrayResize(_roticket, n);
+		ArrayResize(_roprofit, n);
+
+		for(i = 0; i < n; i++)
+		{
+			_roprofit[i][4] *= 40;
+
+			/*if(_roprofit[i][0] >= _roprofit[i][4])
+				closeRing(_roticket, i);*/
+		}
+	}
+}
+
+
+
+
 /* 
  * Debug Funcs
  *
@@ -246,25 +333,25 @@ void initDebugInfo(string _ring[][])
 	int y, i, j;
 
 	//-- background
-	for(int bgnum = 0; bgnum < 8; bgnum++)
+	for(int bgnum = 0; bgnum < 16; bgnum++)
 	{
 		ObjectCreate("bg_"+bgnum, OBJ_LABEL, 0, 0, 0);
 		ObjectSetText("bg_"+bgnum, "g", 300, "Webdings", bgcolor);
 		ObjectSet("bg_"+bgnum, OBJPROP_BACK, false);
-		ObjectSet("bg_"+bgnum, OBJPROP_XDISTANCE, 20 + bgnum % 2 * 400);
-		ObjectSet("bg_"+bgnum, OBJPROP_YDISTANCE, 13 + bgnum / 2 * 387);
+		ObjectSet("bg_"+bgnum, OBJPROP_XDISTANCE, 20 + bgnum % 4 * 400);
+		ObjectSet("bg_"+bgnum, OBJPROP_YDISTANCE, 13 + bgnum / 4 * 387);
 	}
 
+	//-- left side
 	//-- broker price table header
-	string priceTableHeaderName[11] = {"", "Num", "SymbolA", "SymbolB", "SymbolC", "lFPI", "lLowest", "sFPI", "sHighest", "lThold", "sThold"};
-	int    priceTableHeaderY[11]    = {0, 25, 75, 145, 215, 285, 375, 465, 555, 645, 735};
+	string priceTableHeaderName[11] = {"", "Id", "SymbolA", "SymbolB", "SymbolC", "lFPI", "lLowest", "sFPI", "sHighest", "lThold", "sThold"};
+	int    priceTableHeaderX[11]    = {0, 25, 50, 120, 190, 260, 350, 440, 530, 620, 710};
 	y += 15;
 	int realringnum = ringnum - 1;
-	createTextObj("price_header", 25,	y, ">>>Ring(" + realringnum + ") & Price & FPI", titlecolor);
+	createTextObj("price_header", 25,	y, ">>>Rings(" + realringnum + ") & Price & FPI", titlecolor);
 	y += 15;
 	for(i = 1; i < 12; i++)
-		createTextObj("price_header_col_" + i, priceTableHeaderY[i], y, priceTableHeaderName[i]);
-
+		createTextObj("price_header_col_" + i, priceTableHeaderX[i], y, priceTableHeaderName[i]);
 	//-- broker price table body
 	for(i = 1; i < ringnum; i ++)
 	{
@@ -272,22 +359,32 @@ void initDebugInfo(string _ring[][])
 		for (j = 1; j < 4; j ++) 
 		{
 			createTextObj("price_body_row_" + i + "_col_1", 25, y, i, Gray);
-			createTextObj("price_body_row_" + i + "_col_2", 75, y, _ring[i,1], White);
-			createTextObj("price_body_row_" + i + "_col_3", 145,y, _ring[i,2], White);
-			createTextObj("price_body_row_" + i + "_col_4", 215,y, _ring[i,3], White);
+			createTextObj("price_body_row_" + i + "_col_2", 55, y, _ring[i,1], White);
+			createTextObj("price_body_row_" + i + "_col_3", 125,y, _ring[i,2], White);
+			createTextObj("price_body_row_" + i + "_col_4", 195,y, _ring[i,3], White);
 		}
-		for(j = 5; i < 11; i++)
-			createTextObj("price_body_row_" + i + "_col_" + j, priceTableHeaderY[i], y);
+		for(j = 5; j < 11; j++)
+			createTextObj("price_body_row_" + i + "_col_" + j, priceTableHeaderX[j], y);
 	}
 
+
+	//-- right side
 	//-- settings info
-	string settingTableHeaderName[6] = {"", "Trade", "", "Superaddition:", "",  "BaseLots:", ""};
-	int    settingTableHeaderY[6] = {0, 25, 70, 125, 225, 285, 355};
-	y += 15 * 2;
-	createTextObj("setting_header", 25,	y, ">>>Settings", titlecolor);
+	y = 15;
+	string settingTableHeaderName[7] = {"", "Trade", "", "Superaddition:", "",  "BaseLots:", ""};
+	int    settingTableHeaderX[7]    = {0, 790, 835, 890, 990, 1050, 1120};
+	createTextObj("setting_header", 790,	y, ">>>Settings", titlecolor);
 	y += 15;
 	for(i = 1; i < 7; i++)
-		createTextObj("setting_body_row_1_col_" + i, settingTableHeaderName[i], y, settingTableHeaderY[i]);
+		createTextObj("setting_body_row_1_col_" + i, settingTableHeaderX[i], y, settingTableHeaderName[i]);
+
+	//-- orders info
+	y += 15 * 2;
+	string orderTableHeaderName[10] = {"Id", "OrderA", "OrderB", "OrderC", "ProfitA",  "ProfitB", "ProfitC", "Summary", "Target", "FPI"};
+	createTextObj("order_header", 790,	y, ">>>Orders", titlecolor);
+	y += 15;
+	for(i = 0; i < 10; i++)
+		createTextObj("order_header_col_" + i, orderTableHeaderX[i], y, orderTableHeaderName[i]);
 }
 
 //--  update new debug info to chart
@@ -321,4 +418,70 @@ void updateSettingInfo()
 	setTextObj("setting_body_row_1_col_4", settingstatus);
 	
 	setTextObj("setting_body_row_1_col_6", DoubleToStr(BaseLots, LotsDigit));
+}
+
+//-- update ring order information to chart
+void updateRingInfo(int _roticket[][], double _roprofit[][])
+{
+	int i, j, y = 75;
+	int row = ArrayRange(_roticket, 0);
+	double total = 0;
+
+	for(i = 0; i < 200; i ++)
+	{
+		for(j = 0; j < 10; j ++)
+			ObjectDelete("order_body_row_" + i + "_col_" + j);
+	}
+
+	for(i = 0; i < row; i ++)
+	{
+		y += 15;
+		createTextObj("order_body_row_" + i + "_col_0", orderTableHeaderX[0],y, _roticket[i][0], Gray);
+		createTextObj("order_body_row_" + i + "_col_1", orderTableHeaderX[1],y, _roticket[i][1], White);
+		createTextObj("order_body_row_" + i + "_col_2", orderTableHeaderX[2],y, _roticket[i][2], White);
+		createTextObj("order_body_row_" + i + "_col_3", orderTableHeaderX[3],y, _roticket[i][3], White);
+		createTextObj("order_body_row_" + i + "_col_4", orderTableHeaderX[4],y, DoubleToStr(_roprofit[i][1], 2), White);
+		createTextObj("order_body_row_" + i + "_col_5", orderTableHeaderX[5],y, DoubleToStr(_roprofit[i][2], 2), White);
+		createTextObj("order_body_row_" + i + "_col_6", orderTableHeaderX[6],y, DoubleToStr(_roprofit[i][3], 2), White);
+		createTextObj("order_body_row_" + i + "_col_7", orderTableHeaderX[7],y, DoubleToStr(_roprofit[i][0], 2), DeepSkyBlue);
+		createTextObj("order_body_row_" + i + "_col_8", orderTableHeaderX[8],y, DoubleToStr(_roprofit[i][4], 2), Magenta);
+		createTextObj("order_body_row_" + i + "_col_9", orderTableHeaderX[9],y, DoubleToStr(_roprofit[i][5], 5), White);
+
+		total += _roprofit[i][0];
+	}
+
+	y += 15;
+	i++;
+	createTextObj("order_body_row_" + i + "_col_0", orderTableHeaderX[0],y, "Total");
+	createTextObj("order_body_row_" + i + "_col_7", orderTableHeaderX[7],y, DoubleToStr(total, 2), Crimson);
+}
+
+
+
+
+
+//-- 
+void closeRing(int _roticket[][], int _ringindex)
+{
+	for(int i = 1; i < 4; i++)
+		closeOrder(_roticket[_ringindex][i]);
+}
+
+void closeOrder(int _ticket, int _timer = 0)
+{
+	bool status = false;
+	if(_timer > 5)
+		sendAlert("Order:[" + _ticket + "] can not be close, please check it as soon as possible.", "Close Order Error");
+
+	if(OrderSelect(_ticket, SELECT_BY_TICKET))
+	{
+		if(OrderType() == OP_BUY)  
+			status = OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_BID), 3);
+		else if(OrderType() == OP_SELL) 
+			status = OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_ASK), 3);
+
+		if(status == false)
+			_timer++;
+			closeOrder(_ticket, _timer);
+	}
 }
