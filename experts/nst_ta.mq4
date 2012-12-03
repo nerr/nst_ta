@@ -93,7 +93,7 @@ extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PL
 string Ring[200, 4], SymExt;
 double FPI[1, 8], RingOrd[1, 10], Thold[1, 2], RingM[1, 4];
 int    ringnum;
-int    orderTableHeaderX[10]    = {790, 815, 875, 935, 995, 1060, 1130, 1200, 1270, 1330};
+int    orderTableHeaderX[10]    = {760, 790, 855, 920, 985, 1060, 1130, 1200, 1270, 1330};
 int    ROTicket[100, 5]; //-- ringindex， a, b, c, direction
 double ROProfit[100, 6]; //-- total, a, b, c, target, ringfpi
 
@@ -346,7 +346,7 @@ void initDebugInfo(string _ring[][])
 	//-- left side
 	//-- broker price table header
 	string priceTableHeaderName[11] = {"", "Id", "SymbolA", "SymbolB", "SymbolC", "lFPI", "lLowest", "sFPI", "sHighest", "lThold", "sThold"};
-	int    priceTableHeaderX[11]    = {0, 25, 50, 120, 190, 260, 350, 440, 530, 620, 710};
+	int    priceTableHeaderX[11]    = {0, 25, 50, 110, 175, 240, 330, 415, 500, 585, 670};
 	y += 15;
 	int realringnum = ringnum - 1;
 	createTextObj("price_header", 25,	y, ">>>Rings(" + realringnum + ") & Price & FPI", titlecolor);
@@ -360,9 +360,9 @@ void initDebugInfo(string _ring[][])
 		for (j = 1; j < 4; j ++) 
 		{
 			createTextObj("price_body_row_" + i + "_col_1", 25, y, i, Gray);
-			createTextObj("price_body_row_" + i + "_col_2", 55, y, _ring[i,1], White);
-			createTextObj("price_body_row_" + i + "_col_3", 125,y, _ring[i,2], White);
-			createTextObj("price_body_row_" + i + "_col_4", 195,y, _ring[i,3], White);
+			createTextObj("price_body_row_" + i + "_col_2", 50, y, _ring[i,1], White);
+			createTextObj("price_body_row_" + i + "_col_3", 110,y, _ring[i,2], White);
+			createTextObj("price_body_row_" + i + "_col_4", 175,y, _ring[i,3], White);
 		}
 		for(j = 5; j < 11; j++)
 			createTextObj("price_body_row_" + i + "_col_" + j, priceTableHeaderX[j], y);
@@ -373,8 +373,8 @@ void initDebugInfo(string _ring[][])
 	//-- settings info
 	y = 15;
 	string settingTableHeaderName[7] = {"", "Trade", "", "Superaddition:", "",  "BaseLots:", ""};
-	int    settingTableHeaderX[7]    = {0, 790, 835, 890, 990, 1050, 1120};
-	createTextObj("setting_header", 790,	y, ">>>Settings", titlecolor);
+	int    settingTableHeaderX[7]    = {0, 760, 805, 860, 930, 1020, 1090};
+	createTextObj("setting_header", 760,	y, ">>>Settings", titlecolor);
 	y += 15;
 	for(i = 1; i < 7; i++)
 		createTextObj("setting_body_row_1_col_" + i, settingTableHeaderX[i], y, settingTableHeaderName[i]);
@@ -382,7 +382,7 @@ void initDebugInfo(string _ring[][])
 	//-- orders info
 	y += 15 * 2;
 	string orderTableHeaderName[10] = {"Id", "OrderA", "OrderB", "OrderC", "ProfitA",  "ProfitB", "ProfitC", "Summary", "Target", "FPI"};
-	createTextObj("order_header", 790,	y, ">>>Orders", titlecolor);
+	createTextObj("order_header", 760,	y, ">>>Orders", titlecolor);
 	y += 15;
 	for(i = 0; i < 10; i++)
 		createTextObj("order_header_col_" + i, orderTableHeaderX[i], y, orderTableHeaderName[i]);
