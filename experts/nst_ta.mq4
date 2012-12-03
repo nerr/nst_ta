@@ -50,6 +50,7 @@
  * v0.1.24 [dev] 2012-11-29 add remove all object item in initDebugInfo() func;
  * v0.1.25 [dev] 2012-11-29 mv order management funcs to nst_ta_public.mq4;
  * v0.1.26 [dev] 2012-12-03 restructure "initDubugChart()" func;
+ * v0.1.27 [dev] 2012-12-03 merge mq4 file nst_ta and nst_ta_om; remove nst_ta_om.mq4 file;
  *
  *
  * @Todo
@@ -309,8 +310,8 @@ void checkCurrentOrder(int _magicnumber, int &_roticket[][], double &_roprofit[]
 		{
 			_roprofit[i][4] *= 40;
 
-			/*if(_roprofit[i][0] >= _roprofit[i][4])
-				closeRing(_roticket, i);*/
+			if(_roprofit[i][0] >= _roprofit[i][4])
+				closeRing(_roticket, i);
 		}
 	}
 }
@@ -457,31 +458,27 @@ void updateRingInfo(int _roticket[][], double _roprofit[][])
 }
 
 
-
-
-
 //-- 
 void closeRing(int _roticket[][], int _ringindex)
 {
-	for(int i = 1; i < 4; i++)
-		closeOrder(_roticket[_ringindex][i]);
-}
+	int n;
 
-void closeOrder(int _ticket, int _timer = 0)
-{
-	bool status = false;
-	if(_timer > 5)
-		sendAlert("Order:[" + _ticket + "] can not be close, please check it as soon as possible.", "Close Order Error");
-
-	if(OrderSelect(_ticket, SELECT_BY_TICKET))
+	while(n != 3)
 	{
-		if(OrderType() == OP_BUY)  
-			status = OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_BID), 3);
-		else if(OrderType() == OP_SELL) 
-			status = OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_ASK), 3);
-
-		if(status == false)
-			_timer++;
-			closeOrder(_ticket, _timer);
+		n = 0;
+		for(int i = 1; i < 4; i++)
+		{
+			if(OrderSelect(_roticket[_ringindex][i], SELECT_BY_TICKET))
+			{
+				if(OrderType() == OP_BUY)  
+					OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_BID), 3);
+				else if(OrderType() == OP_SELL) 
+					OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_ASK), 3);
+			}
+			else
+			{
+				n++;
+			}
+		}
 	}
 }
