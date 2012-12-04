@@ -51,7 +51,8 @@
  * v0.1.25 [dev] 2012-11-29 mv order management funcs to nst_ta_public.mq4;
  * v0.1.26 [dev] 2012-12-03 restructure "initDubugChart()" func;
  * v0.1.27 [dev] 2012-12-03 merge mq4 file nst_ta and nst_ta_om; remove nst_ta_om.mq4 file;
- *
+ * v0.1.28 [dev] 2012-12-04 adjuse the coordinate of display object;
+ * v0.1.29 [dev] 2012-12-04 fix close order OrderSeclec() param error;
  *
  * @Todo
  */
@@ -81,7 +82,7 @@ extern int 		MagicNumber 	= 99901;
 extern string 	BrokerSetting 	= "---------Broker Setting--------";
 extern int 		LotsDigit 		= 2;
 extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|RON|";
-//"EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|RON|XAU|XAG|"
+								//"EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|RON|XAU|XAG|"
 
 
 
@@ -318,6 +319,32 @@ void checkCurrentOrder(int _magicnumber, int &_roticket[][], double &_roprofit[]
 
 
 
+//-- 
+void closeRing(int _roticket[][], int _ringindex)
+{
+	int n;
+
+	while(n != 3)
+	{
+		n = 0;
+		for(int i = 1; i < 4; i++)
+		{
+			if(OrderSelect(_roticket[_ringindex][i], SELECT_BY_TICKET, MODE_TRADES))
+			{
+				if(OrderType() == OP_BUY)  
+					OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_BID), 3);
+				else if(OrderType() == OP_SELL) 
+					OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_ASK), 3);
+			}
+			else
+			{
+				n++;
+			}
+		}
+	}
+}
+
+
 
 /* 
  * Debug Funcs
@@ -373,7 +400,7 @@ void initDebugInfo(string _ring[][])
 	//-- settings info
 	y = 15;
 	string settingTableHeaderName[7] = {"", "Trade", "", "Superaddition:", "",  "BaseLots:", ""};
-	int    settingTableHeaderX[7]    = {0, 760, 805, 860, 930, 1020, 1090};
+	int    settingTableHeaderX[7]    = {0, 760, 805, 860, 960, 1020, 1090};
 	createTextObj("setting_header", 760,	y, ">>>Settings", titlecolor);
 	y += 15;
 	for(i = 1; i < 7; i++)
@@ -428,7 +455,7 @@ void updateRingInfo(int _roticket[][], double _roprofit[][])
 	int row = ArrayRange(_roticket, 0);
 	double total = 0;
 
-	for(i = 0; i < 200; i ++)
+	for(i = 0; i < 50; i ++)
 	{
 		for(j = 0; j < 10; j ++)
 			ObjectDelete("order_body_row_" + i + "_col_" + j);
@@ -455,30 +482,4 @@ void updateRingInfo(int _roticket[][], double _roprofit[][])
 	i++;
 	createTextObj("order_body_row_" + i + "_col_0", orderTableHeaderX[0],y, "Total");
 	createTextObj("order_body_row_" + i + "_col_7", orderTableHeaderX[7],y, DoubleToStr(total, 2), Crimson);
-}
-
-
-//-- 
-void closeRing(int _roticket[][], int _ringindex)
-{
-	int n;
-
-	while(n != 3)
-	{
-		n = 0;
-		for(int i = 1; i < 4; i++)
-		{
-			if(OrderSelect(_roticket[_ringindex][i], SELECT_BY_TICKET))
-			{
-				if(OrderType() == OP_BUY)  
-					OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_BID), 3);
-				else if(OrderType() == OP_SELL) 
-					OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_ASK), 3);
-			}
-			else
-			{
-				n++;
-			}
-		}
-	}
 }
