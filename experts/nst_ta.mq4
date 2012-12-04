@@ -53,6 +53,7 @@
  * v0.1.27 [dev] 2012-12-03 merge mq4 file nst_ta and nst_ta_om; remove nst_ta_om.mq4 file;
  * v0.1.28 [dev] 2012-12-04 adjuse the coordinate of display object;
  * v0.1.29 [dev] 2012-12-04 fix close order OrderSeclec() param error;
+ * v0.1.30 [dev] 2012-12-04 adjuse the order display total item when display; remove RUB from default extern "Currencies";
  *
  * @Todo
  */
@@ -81,7 +82,7 @@ extern double 	BaseLots    	= 0.5;
 extern int 		MagicNumber 	= 99901;
 extern string 	BrokerSetting 	= "---------Broker Setting--------";
 extern int 		LotsDigit 		= 2;
-extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|RON|";
+extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|LTL|LVL|HUF|HRK|CCK|RON|";
 								//"EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|RON|XAU|XAG|"
 
 
@@ -455,7 +456,7 @@ void updateRingInfo(int _roticket[][], double _roprofit[][])
 	int row = ArrayRange(_roticket, 0);
 	double total = 0;
 
-	for(i = 0; i < 50; i ++)
+	for(i = 0; i < 20; i ++)
 	{
 		for(j = 0; j < 10; j ++)
 			ObjectDelete("order_body_row_" + i + "_col_" + j);
@@ -478,8 +479,11 @@ void updateRingInfo(int _roticket[][], double _roprofit[][])
 		total += _roprofit[i][0];
 	}
 
-	y += 15;
-	i++;
-	createTextObj("order_body_row_" + i + "_col_0", orderTableHeaderX[0],y, "Total");
-	createTextObj("order_body_row_" + i + "_col_7", orderTableHeaderX[7],y, DoubleToStr(total, 2), Crimson);
+	if(row > 0)
+	{
+		y += 15;
+		i++;
+		createTextObj("order_body_row_" + i + "_col_0", orderTableHeaderX[0],y, "Total");
+		createTextObj("order_body_row_" + i + "_col_7", orderTableHeaderX[7],y, DoubleToStr(total, 2), Crimson);
+	}
 }
