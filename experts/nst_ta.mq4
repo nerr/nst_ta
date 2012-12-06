@@ -54,6 +54,7 @@
  * v0.1.28 [dev] 2012-12-04 adjuse the coordinate of display object;
  * v0.1.29 [dev] 2012-12-04 fix close order OrderSeclec() param error;
  * v0.1.30 [dev] 2012-12-04 adjuse the order display total item when display; remove RUB from default extern "Currencies";
+ * v0.1.31 [dev] 2012-12-06 remove extern item Baselots, change to auto calcu use marketinfo(); change order status fpi with diff fpi value;
  *
  * @Todo
  */
@@ -113,7 +114,7 @@ int init()
 		BaseLots = 2;
 	else if(MarketInfo(Symbol(), MODE_LOTSTEP) == 0.1)
 		BaseLots = 1;
-	
+
 	if(StringLen(Symbol()) > 6)
 		SymExt = StringSubstr(Symbol(),6);
 
