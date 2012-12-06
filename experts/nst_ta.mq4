@@ -55,6 +55,7 @@
  * v0.1.29 [dev] 2012-12-04 fix close order OrderSeclec() param error;
  * v0.1.30 [dev] 2012-12-04 adjuse the order display total item when display; remove RUB from default extern "Currencies";
  * v0.1.31 [dev] 2012-12-06 remove extern item Baselots, change to auto calcu use marketinfo(); change order status fpi with diff fpi value;
+ * v0.1.32 [dev] 2012-12-06 adjuse the coordinate of display object; change thold calu value from 0.0005 to 0.001; change thold value display color;
  *
  * @Todo
  */
@@ -98,7 +99,7 @@ int    ringnum;
 int    orderTableHeaderX[10]    = {760, 790, 855, 920, 985, 1060, 1130, 1200, 1270, 1330};
 int    ROTicket[100, 5]; //-- ringindex， a, b, c, direction
 double ROProfit[100, 6]; //-- total, a, b, c, target, ringfpi
-double BaseLots;
+double LotsDigit;
 
 
 
@@ -111,9 +112,9 @@ double BaseLots;
 int init()
 {
 	if(MarketInfo(Symbol(), MODE_LOTSTEP) == 0.01)
-		BaseLots = 2;
+		LotsDigit = 2;
 	else if(MarketInfo(Symbol(), MODE_LOTSTEP) == 0.1)
-		BaseLots = 1;
+		LotsDigit = 1;
 
 	if(StringLen(Symbol()) > 6)
 		SymExt = StringSubstr(Symbol(),6);
@@ -206,7 +207,7 @@ void getFPI(double &_fpi[][])
 			_fpi[i][7] = _fpi[i][4] - _fpi[i][2];
 
 		//-- auto set fpi thold
-		if(_fpi[i][7] >= 0.0005 && _fpi[i][5] == 0 && _fpi[i][6] == 0)
+		if(_fpi[i][7] >= 0.001 && _fpi[i][5] == 0 && _fpi[i][6] == 0)
 		{
 			_fpi[i][5] = _fpi[i][2]; //-- 
 			_fpi[i][6] = _fpi[i][4]; //--
@@ -392,7 +393,7 @@ void initDebugInfo(string _ring[][])
 	//-- left side
 	//-- broker price table header
 	string priceTableHeaderName[11] = {"", "Id", "SymbolA", "SymbolB", "SymbolC", "lFPI", "lLowest", "sFPI", "sHighest", "lThold", "sThold"};
-	int    priceTableHeaderX[11]    = {0, 25, 50, 110, 175, 240, 330, 415, 500, 585, 670};
+	int    priceTableHeaderX[11]    = {0, 25, 50, 115, 181, 250, 325, 400, 475, 550, 625};
 	y += 15;
 	int realringnum = ringnum - 1;
 	createTextObj("price_header", 25,	y, ">>>Rings(" + realringnum + ") & Price & FPI", titlecolor);
@@ -407,8 +408,8 @@ void initDebugInfo(string _ring[][])
 		{
 			createTextObj("price_body_row_" + i + "_col_1", 25, y, i, Gray);
 			createTextObj("price_body_row_" + i + "_col_2", 50, y, _ring[i,1], White);
-			createTextObj("price_body_row_" + i + "_col_3", 110,y, _ring[i,2], White);
-			createTextObj("price_body_row_" + i + "_col_4", 175,y, _ring[i,3], White);
+			createTextObj("price_body_row_" + i + "_col_3", 115,y, _ring[i,2], White);
+			createTextObj("price_body_row_" + i + "_col_4", 181,y, _ring[i,3], White);
 		}
 		for(j = 5; j < 11; j++)
 			createTextObj("price_body_row_" + i + "_col_" + j, priceTableHeaderX[j], y);
@@ -445,6 +446,11 @@ void updateDubugInfo(double _fpi[][])
 		{
 			if(j==5 || j==7)
 				setTextObj("price_body_row_" + i + "_col_" + j, _fpi[i][j-4], DeepSkyBlue);
+			else if(j==9 || j==10)
+				if(_fpi[i][j-4]==0)
+					setTextObj("price_body_row_" + i + "_col_" + j, _fpi[i][j-4]);
+				else
+					setTextObj("price_body_row_" + i + "_col_" + j, _fpi[i][j-4], C'0xe6,0xdb,0x74');
 			else
 				setTextObj("price_body_row_" + i + "_col_" + j, _fpi[i][j-4]);
 		}
