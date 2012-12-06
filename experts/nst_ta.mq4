@@ -81,7 +81,6 @@ extern bool 	Superaddition	= false;
 extern double 	BaseLots    	= 0.5;
 extern int 		MagicNumber 	= 99901;
 extern string 	BrokerSetting 	= "---------Broker Setting--------";
-extern int 		LotsDigit 		= 2;
 extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|LTL|LVL|HUF|HRK|CCK|RON|";
 								//"EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|RON|XAU|XAG|"
 
@@ -98,6 +97,7 @@ int    ringnum;
 int    orderTableHeaderX[10]    = {760, 790, 855, 920, 985, 1060, 1130, 1200, 1270, 1330};
 int    ROTicket[100, 5]; //-- ringindex， a, b, c, direction
 double ROProfit[100, 6]; //-- total, a, b, c, target, ringfpi
+double BaseLots;
 
 
 
@@ -109,6 +109,11 @@ double ROProfit[100, 6]; //-- total, a, b, c, target, ringfpi
 //-- init
 int init()
 {
+	if(MarketInfo(Symbol(), MODE_LOTSTEP) == 0.01)
+		BaseLots = 2;
+	else if(MarketInfo(Symbol(), MODE_LOTSTEP) == 0.1)
+		BaseLots = 1;
+	
 	if(StringLen(Symbol()) > 6)
 		SymExt = StringSubstr(Symbol(),6);
 
@@ -311,6 +316,7 @@ void checkCurrentOrder(int _magicnumber, int &_roticket[][], double &_roprofit[]
 		for(i = 0; i < n; i++)
 		{
 			_roprofit[i][4] *= 40;
+			_roprofit[i][5] = getCurrFpi(_roticket[i][0], _roticket[i][4], _roprofit[i][5]);
 
 			if(_roprofit[i][0] >= _roprofit[i][4])
 				closeRing(_roticket, i);
@@ -318,7 +324,18 @@ void checkCurrentOrder(int _magicnumber, int &_roticket[][], double &_roprofit[]
 	}
 }
 
+//--
+double getCurrFpi(int _ringidx, int _ringdirection, double _openfpi)
+{
+	double fpi;
 
+	if(_ringdirection==1)
+		fpi = _openfpi - FPI[_ringidx][1];
+	else if(_ringdirection==0)
+		fpi = FPI[_ringidx][3] - _openfpi;
+
+	return(fpi);
+}
 
 //-- 
 void closeRing(int _roticket[][], int _ringindex)
