@@ -56,6 +56,7 @@
  * v0.1.30 [dev] 2012-12-04 adjuse the order display total item when display; remove RUB from default extern "Currencies";
  * v0.1.31 [dev] 2012-12-06 remove extern item Baselots, change to auto calcu use marketinfo(); change order status fpi with diff fpi value;
  * v0.1.32 [dev] 2012-12-06 adjuse the coordinate of display object; change thold calu value from 0.0005 to 0.001; change thold value display color;
+ * v0.1.33 [dev] 2012-12-07 fix CloseRing() func select order bug (may be mt4 bug...)
  *
  * @Todo
  */
@@ -349,7 +350,7 @@ void closeRing(int _roticket[][], int _ringindex)
 		n = 0;
 		for(int i = 1; i < 4; i++)
 		{
-			if(OrderSelect(_roticket[_ringindex][i], SELECT_BY_TICKET, MODE_TRADES))
+			if(OrderSelect(_roticket[_ringindex][i], SELECT_BY_TICKET, MODE_TRADES) && OrderCloseTime()==0)
 			{
 				if(OrderType() == OP_BUY)  
 					OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_BID), 3);
