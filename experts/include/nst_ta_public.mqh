@@ -86,6 +86,7 @@ bool openRing(int _direction, int _index, double _price[], double _fpi, string _
 
 	//-- calculate last symbol order losts
 	double c_lots = NormalizeDouble(_baselots * _price[2], _lotsdigit);
+	c_lots = getValidLots(c_lots, _ring[_index][3]);
 
 
 	//-- open order a
@@ -223,4 +224,14 @@ void getInfoByComment(string _comment, int &_ringindex, int &_symbolindex, int &
 	_direction 	= StrToDouble(StringSubstr(_comment, verticalchart+1, 1));
 	_ringindex 	= StrToInteger(StringSubstr(_comment, 0, sharpchart));
 	_symbolindex= StrToInteger(StringSubstr(_comment, sharpchart+1, 1));
+}
+
+//-- get valid lots
+double getValidLots(double _lots, string _symbol)
+{
+	double minlots = MarketInfo(_symbol, MODE_MINLOT);
+
+	_lots = minlots * MathRound(_lots / minlots);
+
+	return(_lots);
 }
