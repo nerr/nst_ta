@@ -370,7 +370,7 @@ void closeRing(int _roticket[][], int _ringindex)
 				else if(OrderType() == OP_SELL) 
 					OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_ASK), 3);
 				else if(OrderType() == OP_BUYLIMIT || OrderType() == OP_SELLLIMIT) 
-					OrderDelete(ticket);
+					OrderDelete(OrderTicket());
 			}
 			else
 			{
