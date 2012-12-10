@@ -57,6 +57,7 @@
  * v0.1.31 [dev] 2012-12-06 remove extern item Baselots, change to auto calcu use marketinfo(); change order status fpi with diff fpi value;
  * v0.1.32 [dev] 2012-12-06 adjuse the coordinate of display object; change thold calu value from 0.0005 to 0.001; change thold value display color;
  * v0.1.33 [dev] 2012-12-07 fix CloseRing() func select order bug (may be mt4 bug...);
+ * v0.1.34 [dev] 2012-12-07 add repairRing() func use to repair problem ring;
  *
  * @Todo
  */
@@ -318,11 +319,22 @@ void checkCurrentOrder(int _magicnumber, int &_roticket[][], double &_roprofit[]
 
 		for(i = 0; i < n; i++)
 		{
+			//-- calculate total profit and diff fpi
 			_roprofit[i][4] *= 40;
 			_roprofit[i][5] = getCurrFpi(_roticket[i][0], _roticket[i][4], _roprofit[i][5]);
 
 			if(_roprofit[i][0] >= _roprofit[i][4])
 				closeRing(_roticket, i);
+
+			//-- check problem ring
+			if(_roticket[i][1] == 0 || _roticket[i][2] == 0 || _roticket[i][3] == 0)
+			{
+				//-- 
+				if(_roprofit[i][0] >= 0)
+					closeRing(_roticket, i);
+				else
+					repairRing(_roticket, i);
+			}
 		}
 	}
 }
@@ -360,6 +372,80 @@ void closeRing(int _roticket[][], int _ringindex)
 			else
 			{
 				n++;
+			}
+		}
+	}
+}
+
+//--
+void repairRing(int _roticket[][], int _ringindex)
+{
+	double lots, ringfpi, price[4];
+	int limit_direction = 2, magicnumber, ringindex, ticketno, ringdirection, symbolindex;
+	string commentText, symext, sym[4];
+
+	if(StringLen(Symbol()) > 6)
+		symext = StringSubstr(Symbol(),6);
+
+	if(_roticket[_ringindex][1] > 0 && _roticket[_ringindex][2] == 0 && _roticket[_ringindex][3] > 0)
+	{
+		if(OrderSelect(_roticket[_ringindex][1], SELECT_BY_TICKET, MODE_TRADES))
+		{
+			sym[1] = OrderSymbol();
+			price[1] = OrderOpenPrice();
+			lots = OrderLots();
+			magicnumber = OrderMagicNumber();
+
+			getInfoByComment(OrderComment(), ringindex, symbolindex, ringdirection, ringfpi);
+		}
+
+		if(OrderSelect(_roticket[_ringindex][3], SELECT_BY_TICKET, MODE_TRADES))
+		{
+			sym[3] = OrderSymbol();
+			price[3] = OrderOpenPrice();
+			limit_direction += OrderType();
+		}
+
+		commentText = "|" + ringdirection + "@" + ringfpi;
+		sym[2] = StringSubstr(sym[1], 0, 3) + StringSubstr(sym[3], 0, 3) + symext;
+		price[2] = NormalizeDouble(price[1] / ringfpi / price[3], MarketInfo(sym[2], MODE_DIGITS));
+
+		ticketno = OrderSend(sym[2], limit_direction, lots, price[2], 0, 0, 0, ringindex + "#2" + commentText, magicnumber);
+	}
+	else if(_roticket[_ringindex][1] > 0 && _roticket[_ringindex][2] > 0 && _roticket[_ringindex][3] == 0)
+	{
+		if(OrderSelect(_roticket[_ringindex][1], SELECT_BY_TICKET, MODE_TRADES))
+		{
+			sym[1] = OrderSymbol();
+			price[1] = OrderOpenPrice();
+			lots = OrderLots();
+			magicnumber = OrderMagicNumber();
+
+			getInfoByComment(OrderComment(), ringindex, symbolindex, ringdirection, ringfpi);
+		}
+
+		if(OrderSelect(_roticket[_ringindex][2], SELECT_BY_TICKET, MODE_TRADES))
+		{
+			sym[2] = OrderSymbol();
+			price[2] = OrderOpenPrice();
+			limit_direction += OrderType();
+			lots *= price[2];
+		}
+
+		commentText = "|" + ringdirection + "@" + ringfpi;
+		sym[3] = StringSubstr(sym[2], 3, 3) + StringSubstr(sym[1], 3, 3) + symext;
+		price[3] = NormalizeDouble(price[1] / ringfpi / price[2], MarketInfo(sym[3], MODE_DIGITS));
+		lots = NormalizeDouble(lots, LotsDigit);
+		//Alert(commentText + "|" + sym[3] + "|" + price[3] + "|" + limit_direction + "|" +lots);
+		ticketno = OrderSend(sym[3], limit_direction, lots, price[3], 0, 0, 0, ringindex + "#3" + commentText, magicnumber);
+	}
+	else if(_roticket[_ringindex][1] > 0 && _roticket[_ringindex][2] == 0 && _roticket[_ringindex][3] == 0)
+	{
+		if(OrderSelect(_roticket[_ringindex][1], SELECT_BY_TICKET, MODE_TRADES))
+		{
+			if(OrderTakeProfit() == 0 || OrderStopLoss() == 0)
+			{
+				//OrderModify(OrderTicket(),OrderOpenPrice(), Bid-Point*TrailingStop, OrderTakeProfit(), 0);
 			}
 		}
 	}
