@@ -58,6 +58,7 @@
  * v0.1.32 [dev] 2012-12-06 adjuse the coordinate of display object; change thold calu value from 0.0005 to 0.001; change thold value display color;
  * v0.1.33 [dev] 2012-12-07 fix CloseRing() func select order bug (may be mt4 bug...);
  * v0.1.34 [dev] 2012-12-07 add repairRing() func use to repair problem ring;
+ * v0.1.35 [dev] 2012-12-07 add delete limit order in closeRing() func;
  *
  * @Todo
  */
@@ -368,6 +369,8 @@ void closeRing(int _roticket[][], int _ringindex)
 					OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_BID), 3);
 				else if(OrderType() == OP_SELL) 
 					OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_ASK), 3);
+				else if(OrderType() == OP_BUYLIMIT || OrderType() == OP_SELLLIMIT) 
+					OrderDelete(ticket);
 			}
 			else
 			{
