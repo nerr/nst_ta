@@ -365,11 +365,11 @@ void closeRing(int _roticket[][], int _ringindex)
 		{
 			if(OrderSelect(_roticket[_ringindex][i], SELECT_BY_TICKET, MODE_TRADES) && OrderCloseTime()==0)
 			{
-				if(OrderType() == OP_BUY)  
+				if(OrderType() == OP_BUY)
 					OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_BID), 3);
-				else if(OrderType() == OP_SELL) 
+				else if(OrderType() == OP_SELL)
 					OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_ASK), 3);
-				else if(OrderType() == OP_BUYLIMIT || OrderType() == OP_SELLLIMIT) 
+				else if(OrderType() == OP_BUYLIMIT || OrderType() == OP_SELLLIMIT)
 					OrderDelete(OrderTicket());
 			}
 			else
