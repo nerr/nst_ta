@@ -29,6 +29,8 @@ extern bool   EnableTrade   = true;
 extern bool   Superaddition = false;
 extern double BaseLots      = 0.5;
 extern int    MagicNumber   = 99901;
+extern string NotificationSetting  = "---------Notification Setting--------";
+extern string MQID = "B46329C1";
 
 
 
@@ -82,7 +84,7 @@ void OnDeinit(const int reason)
 
 void OnTick()
 {
-    //run();
+    run();
 }
 
 void OnTimer()
@@ -439,4 +441,10 @@ void N_sendAlert(string _text = "null", string _type="Information")
     N_outputLog(_text, _type);
     PlaySound("alert.wav");
     Alert(_text);
+}
+
+//--
+void N_send2Mobile(string _logtext, string _type="Information")
+{
+    
 }
