@@ -5,21 +5,22 @@
 #include <nst_ta_public.mqh>
 
 
-string 	db_name 	= "D:\\Documents\\alpariukswaptest.db";
-string 	db_table	= "dayinfo";
-int 	magicnum	= 701;
+string 	db_name 		= "D:\\Documents\\alpariukswaptest.db";
+string 	db_ordertable	= "dayinfo";
+string 	db_accounttable	= "accountinfo";
+int 	magicnum		= 701;
 
 
 int start ()
 {
-	if (!D_checkTableExists(db_name, db_table))
-		sendAlert("db is not exists.", "Error");
+	if(!D_checkTableExists(db_name, db_ordertable))
+		sendAlert("Table is not exists.", "Error");
 
 	string currtime = TimeToStr(TimeLocal(),TIME_DATE|TIME_SECONDS);
 	int ordertotal = OrdersTotal();
-	string query = "INSERT INTO " + db_table + " (datetime,ticket,symbol,type,size,openprice,closeprice,commission,profit,swap) ";
-
-
+	string query = "INSERT INTO " + db_ordertable + " (datetime,ticket,symbol,type,size,openprice,closeprice,commission,profit,swap) ";
+   
+	//-- order log
 	for(int i = 0; i < ordertotal; i++)
 	{
 		if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
@@ -38,6 +39,25 @@ int start ()
 
 	query = StringSubstr(query, 0, StringLen(query) - 11);
 	
+	D_exec(db_name, query);
+
+	//-- account log
+	if(!D_checkTableExists(db_name, db_accounttable))
+		sendAlert("Table is not exists.", "Error");
+
+	query = "INSERT INTO " + db_accounttable + " (datetime,broker,account,balance,equity,margin,freemargin,leverage) VALUES ";
+	query = StringConcatenate(
+		query + "(",
+		"\"" + currtime + "\",",
+		"\"" + AccountCompany() + "\",",
+		AccountNumber() + ",",
+		AccountBalance() + ",",
+		AccountEquity() + ",",
+		AccountMargin() + ",",
+		AccountFreeMargin() + ",",
+		AccountLeverage() + ")"
+	);
+
 	D_exec(db_name, query);
 
 	return(0);
