@@ -223,26 +223,43 @@ void R_getFPI(double &_fpi[][7], string &_ring[][3])
 {
     CSymbolInfo *csymbolinfo = new CSymbolInfo();
 
-    double _price[3];
+    double l_price[3];
+    double s_price[3];
 
     for(int i = 0; i < RingNum; i ++)
     {
-        if(!csymbolinfo.Name(Ring[i][0]) || !csymbolinfo.Name(Ring[i][1]) || !csymbolinfo.Name(Ring[i][2]))
-            continue;
-        
-        //-- long 
-        _price[0] = SymbolInfoDouble(Ring[i][0], SYMBOL_ASK);
-        _price[1] = SymbolInfoDouble(Ring[i][1], SYMBOL_BID);
-        _price[2] = SymbolInfoDouble(Ring[i][2], SYMBOL_BID);
-        //-- buy fpi
-        if(_price[0] > 0 && _price[1] > 0 && _price[2] > 0)
+        for(int x = 0; x < 3; x++)
         {
-            _fpi[i][0] = _price[0] / (_price[1] * _price[2]);
+            csymbolinfo.Name(Ring[i][x])
+            if(csymbolinfo.RefreshRates())
+            {
+                if(x == 0)
+                {
+                    l_price[x] = csymbolinfo.Ask();
+                    s_price[x] = csymbolinfo.Bid();
+                }
+                else
+                {
+                    l_price[x] = csymbolinfo.Bid();
+                    s_price[x] = csymbolinfo.Ask();
+                }
+            }
+            else
+            {
+                l_price[x] = 0;
+                s_price[x] = 0;
+            }
+        }
+        
+        //-- long
+        if(l_price[0] > 0 && l_price[1] > 0 && l_price[2] > 0)
+        {
+            _fpi[i][0] = l_price[0] / (l_price[1] * l_price[2]);
             //-- check buy chance
             //if(_fpi[i][0] < _fpi[i][4] && EnableTrade == true && (R_ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][0] <= RingOrd[i][0] - 0.0005)))
             if(_fpi[i][0] < _fpi[i][4] && EnableTrade == true && R_ringHaveOrder(i) == false)
             {
-                O_openRing(0, i, _price, _fpi[i][0], Ring, MagicNumber, BaseLots);
+                O_openRing(0, i, l_price, _fpi[i][0], Ring, MagicNumber, BaseLots);
             }
             //-- buy FPI history
             if(_fpi[i][1] == 0 || _fpi[i][0] < _fpi[i][1]) 
@@ -252,18 +269,15 @@ void R_getFPI(double &_fpi[][7], string &_ring[][3])
             _fpi[i][0] = 0;
 
         //-- short
-        if(_price[0] > 0 && _price[1] > 0 && _price[2] > 0)
+        if(s_price[0] > 0 && s_price[1] > 0 && s_price[2] > 0)
         {
-            _price[0] = SymbolInfoDouble(Ring[i][0], SYMBOL_BID);
-            _price[1] = SymbolInfoDouble(Ring[i][1], SYMBOL_ASK);
-            _price[2] = SymbolInfoDouble(Ring[i][2], SYMBOL_ASK);
             //-- sell fpi
-            _fpi[i][2] = _price[0] / (_price[1] * _price[2]);
+            _fpi[i][2] = s_price[0] / (s_price[1] * s_price[2]);
             //-- check sell chance
             //if(_fpi[i][5] > 0 && _fpi[i][2] >= _fpi[i][5] && EnableTrade == true && (R_ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][2] >= RingOrd[i][2] + 0.0005)))
             if(_fpi[i][5] > 0 && _fpi[i][2] >= _fpi[i][5] && EnableTrade == true && R_ringHaveOrder(i) == false)
             {
-                O_openRing(1, i, _price, _fpi[i][2], Ring, MagicNumber, BaseLots);
+                O_openRing(1, i, s_price, _fpi[i][2], Ring, MagicNumber, BaseLots);
             }
             //-- sell FPI history
             if(_fpi[i][3] == 0 || _fpi[i][2] > _fpi[i][3]) 
