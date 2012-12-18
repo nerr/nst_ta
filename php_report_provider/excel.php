@@ -6,12 +6,14 @@ ini_set('display_startup_errors', false);
 date_default_timezone_set('Asia/Shanghai');
 
 
-//-- get data from sqlite
+//-- get order data from sqlite
 $dbfile = 'D:\Documents\alpariukswaptest.db';
 $db = new SQLite3($dbfile);
 $results = $db->query('SELECT * FROM dayinfo ORDER BY datetime');
 while ($row = $results->fetchArray()) //--
 {
+	$accountdate = $row['datetime'];
+
 	$datestring = substr($row['datetime'], 0, 10);
 	$datestring = str_replace('.', '-', $datestring);
 
@@ -28,7 +30,17 @@ while ($row = $results->fetchArray()) //--
 	$total[$datestring]['size'] 		+= $row['size'];
 }
 
-//-- reorganize data
+//-- get account data form sqlite
+$results = $db->query('SELECT * FROM accountinfo WHERE datetime="'.$accountdate.'"');
+$row = $results->fetchArray();
+$sheetname = $row['broker'].' ('.$row['account'].')';
+$account['Balance'] = $row['balance'];
+$account['Equity']  = $row['equity'];
+$account['Margin']  = $row['margin'];
+$account['Free Margin']  = $row['freemargin'];
+//$account['Leverage']     = $row['leverage'].':1';
+
+//-- reorganize order data
 reset($total);
 for($i = 0; $i < count($total); $i++)
 {
@@ -150,12 +162,29 @@ for($i = 0; $i < count($data); $i++)
 	$l++;
 }
 
+//-- fill account date
+$l += 2;
+$n = 0;
+foreach($account as $item=>$value)
+{
+	$sheet->setCellValue($c{$n}.$l, $item);
+
+	$sheet->setCellValue($c{$n}.($l+1), $value);
+	$sheet->getStyle($c{$n}.($l+1))->getNumberFormat()->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_NUMBER_00);
+	
+	$n++;
+}
+
+
+
 //-- style
 $lastline = 3 + count($total); //-- lastline 
 
-$style_allborders = array('allborders' => array('style' => PHPExcel_Style_Border::BORDER_THIN));
+$style_allborders = array(
+	'allborders' => array('style' => PHPExcel_Style_Border::BORDER_THIN)
+);
 
-//-- header
+//-- order table header
 $sheet->getStyle("A2:T3")->applyFromArray(
 	array(
 		'fill' => array(
@@ -176,13 +205,13 @@ $sheet->getStyle("A2:T3")->applyFromArray(
 );
 
 
-//-- date
+//-- order table date
 $sheet->getStyle("A3:A".$lastline)->applyFromArray(
 	array(
 		'borders' => $style_allborders
 	)
 );
-//-- data
+//-- order table data
 $sheet->getStyle('B4:M'.$lastline)->applyFromArray(
 	array(
 		'fill' => array(
@@ -192,7 +221,7 @@ $sheet->getStyle('B4:M'.$lastline)->applyFromArray(
 		'borders' => $style_allborders
 	)
 );
-//-- total
+//-- order table total
 $sheet->getStyle("N4:T".$lastline)->applyFromArray(
 	array(
 		'fill' => array(
@@ -203,6 +232,32 @@ $sheet->getStyle("N4:T".$lastline)->applyFromArray(
 	)
 );
 
+//-- account table header
+$sheet->getStyle("A".$l.":D".$l)->applyFromArray(
+	array(
+		'fill' => array(
+			'type'  => PHPExcel_Style_Fill::FILL_SOLID,
+			'color' => array('argb' => '99CC00')
+		),
+		'borders' => $style_allborders,
+		'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+		'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
+		'rotation' => 0,
+		'alignment' => array('wrap' => true),
+		'font' => array(
+			'color' => array( 'rgb' => PHPExcel_Style_Color::COLOR_BLACK),
+			'size' => '11',
+			'bold' => true,
+		),
+	)
+);
+
+//-- account table data
+$sheet->getStyle("A".($l+1).":D".($l+1))->applyFromArray(
+	array(
+		'borders' => $style_allborders
+	)
+);
 
 
 //-- auto set width
@@ -217,7 +272,7 @@ $lastline += 5;
 $objDrawing->setName('Logo');
 $objDrawing->setDescription('Logo');
 $objDrawing->setPath('./images/logo_new.png');
-$objDrawing->setHeight(104);
+$objDrawing->setHeight(80);
 $objDrawing->setCoordinates('P'.$lastline);
 $objDrawing->setOffsetX(110);
 //$objDrawing->setRotation(25);
@@ -225,7 +280,7 @@ $objDrawing->setWorksheet($objPHPExcel->getActiveSheet());
 
 // Rename worksheet
 echo date('H:i:s') , " Rename worksheet" , EOL;
-$objPHPExcel->getActiveSheet()->setTitle('report');
+$objPHPExcel->getActiveSheet()->setTitle($sheetname);
 
 // Save Excel 2007 file
 echo date('H:i:s') , " Write to Excel2007 format" , EOL;
