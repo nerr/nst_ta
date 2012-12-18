@@ -39,6 +39,7 @@ extern bool   EnableNotifi  = true;
  *
  */
 #include <Trade\SymbolInfo.mqh>
+#include <Trade\Trade.mqh>
 
 
 
@@ -236,30 +237,43 @@ void R_getFPI(double &_fpi[][7], string &_ring[][3])
         _price[1] = SymbolInfoDouble(Ring[i][1], SYMBOL_BID);
         _price[2] = SymbolInfoDouble(Ring[i][2], SYMBOL_BID);
         //-- buy fpi
-        _fpi[i][0] = _price[0] / (_price[1] * _price[2]);
-        //-- check buy chance
-        /*if(_fpi[i][1] <= _fpi[i][5] && EnableTrade == true && (ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
+        if(_price[0] > 0 && _price[1] > 0 && _price[2] > 0)
         {
-            openRing(0, i, _price, _fpi[i][1], Ring, MagicNumber, BaseLots, LotsDigit);
-        }*/
-        //-- buy FPI history
-        if(_fpi[i][1] == 0 || _fpi[i][0] < _fpi[i][1]) 
-            _fpi[i][1] = _fpi[i][0];
+            _fpi[i][0] = _price[0] / (_price[1] * _price[2]);
+            //-- check buy chance
+            //if(_fpi[i][0] < _fpi[i][4] && EnableTrade == true && (R_ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][0] <= RingOrd[i][0] - 0.0005)))
+            if(_fpi[i][0] < _fpi[i][4] && EnableTrade == true && R_ringHaveOrder(i) == false)
+            {
+                O_openRing(0, i, _price, _fpi[i][0], Ring, MagicNumber, BaseLots);
+            }
+            //-- buy FPI history
+            if(_fpi[i][1] == 0 || _fpi[i][0] < _fpi[i][1]) 
+                _fpi[i][1] = _fpi[i][0];
+        }
+        else
+            _fpi[i][0] = 0;
 
         //-- short
-        _price[0] = SymbolInfoDouble(Ring[i][0], SYMBOL_BID);
-        _price[1] = SymbolInfoDouble(Ring[i][1], SYMBOL_ASK);
-        _price[2] = SymbolInfoDouble(Ring[i][2], SYMBOL_ASK);
-        //-- sell fpi
-        _fpi[i][2] = _price[0] / (_price[1] * _price[2]);
-        //-- check sell chance
-        /*if(_fpi[i][6] > 0 && _fpi[i][3] >= _fpi[i][6] && EnableTrade == true && (ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
+        if(_price[0] > 0 && _price[1] > 0 && _price[2] > 0)
         {
-            openRing(1, i, _price, _fpi[i][3], Ring, MagicNumber, BaseLots, LotsDigit);
-        }*/
-        //-- sell FPI history
-        if(_fpi[i][3] == 0 || _fpi[i][2] > _fpi[i][3]) 
-            _fpi[i][3] = _fpi[i][2];
+            _price[0] = SymbolInfoDouble(Ring[i][0], SYMBOL_BID);
+            _price[1] = SymbolInfoDouble(Ring[i][1], SYMBOL_ASK);
+            _price[2] = SymbolInfoDouble(Ring[i][2], SYMBOL_ASK);
+            //-- sell fpi
+            _fpi[i][2] = _price[0] / (_price[1] * _price[2]);
+            //-- check sell chance
+            //if(_fpi[i][5] > 0 && _fpi[i][2] >= _fpi[i][5] && EnableTrade == true && (R_ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][2] >= RingOrd[i][2] + 0.0005)))
+            if(_fpi[i][5] > 0 && _fpi[i][2] >= _fpi[i][5] && EnableTrade == true && R_ringHaveOrder(i) == false)
+            {
+                O_openRing(1, i, _price, _fpi[i][2], Ring, MagicNumber, BaseLots);
+            }
+            //-- sell FPI history
+            if(_fpi[i][3] == 0 || _fpi[i][2] > _fpi[i][3]) 
+                _fpi[i][3] = _fpi[i][2];
+        }
+        else
+            _fpi[i][2] = 0;
+
 
 
         //-- sH-bL
@@ -273,6 +287,200 @@ void R_getFPI(double &_fpi[][7], string &_ring[][3])
             _fpi[i][5] = _fpi[i][3]; //--
         }
     }
+}
+
+//-- check ring have order or not by ring index number
+bool R_ringHaveOrder(int _ringindex)
+{
+    int total = OrdersTotal();
+    int  ringidx = -1;
+    string comm = "";
+
+    if(total == 0)
+        return(false);
+    else
+    {
+        for(int i = 0; i < total; i++)
+        {
+            comm = "";
+            if(OrderGetTicket(i))
+            {
+                if(OrderGetInteger(ORDER_MAGIC) == MagicNumber)
+                {
+                    comm = OrderGetString(ORDER_COMMENT);
+                    ringidx = StringToInteger(StringSubstr(comm, 0, StringFind(comm, "#", 0)));
+                    
+                    if(ringidx == _ringindex)
+                        return(true);
+                }
+            }
+        }
+    }
+
+    return(false);
+}
+
+
+
+/*
+ * Order Functions
+ *
+ */
+//-- open ring _direction = 0(buy)/1(sell)
+bool O_openRing(int _direction, int _index, double &_price[], double _fpi, string &_ring[][3], int _magicnumber, double _lots)
+{
+    int b_c_direction, limit_direction, statuscode[3];
+    
+    //-- adjust b c order direction
+    if(_direction == 0)
+        b_c_direction = 1;
+    else if(_direction == 1)
+        b_c_direction = 0;
+
+    //-- make comment string
+    string commentText = "|" + IntegerToString(_direction) + "@" + DoubleToString(_fpi, 7);
+
+    //-- calculate last symbol order losts
+    double c_lots = NormalizeDouble(_lots * _price[2], 2);
+    
+    //-- check lots of three orders
+    if(!O_checkLots(_ring[_index][0], _lots) || !O_checkLots(_ring[_index][1], _lots) || !O_checkLots(_ring[_index][2], c_lots))
+    {
+      N_outputLog("Lots error. [RingIdx:" + IntegerToString(_index) + "][AB:" + DoubleToString(_lots, 2) + "][C:" + DoubleToString(c_lots, 2), "Trading Error");
+      return(false);
+    }
+    
+    //-- open order a
+    statuscode[0] = O_openOrder(_ring[_index][0], 0, _direction, _lots, _price[0], _magicnumber, IntegerToString(_index) + "#1" + commentText);
+    if(statuscode[0] == 10015)
+    {
+        if(_direction==0 && SymbolInfoDouble(_ring[_index][0], SYMBOL_ASK) < _price[0])
+            statuscode[0] = O_openOrder(_ring[_index][0], 0, _direction, _lots, SymbolInfoDouble(_ring[_index][0], SYMBOL_ASK), _magicnumber, IntegerToString(_index) + "#1" + commentText);
+        else if(_direction==1 && SymbolInfoDouble(_ring[_index][0], SYMBOL_BID) > _price[0])
+            statuscode[0] = O_openOrder(_ring[_index][0], 0, _direction, _lots, SymbolInfoDouble(_ring[_index][0], SYMBOL_BID), _magicnumber, IntegerToString(_index) + "#1" + commentText);
+    }
+    if(statuscode[0] == 10009)
+        N_outputLog("nst_ta - First order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "]", "Trading info");
+    else
+    {
+        N_outputLog("nst_ta - First order can not be send. cancel ring. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "][" + IntegerToString(GetLastError()) + "]", "Trading error");
+        return(false);
+    }
+
+    //-- open order b
+    statuscode[1] = O_openOrder(_ring[_index][1], 0, _direction, _lots, _price[1], _magicnumber, IntegerToString(_index) + "#2" + commentText);
+    if(statuscode[1] == 10015)
+    {
+        if(b_c_direction==0 && SymbolInfoDouble(_ring[_index][1], SYMBOL_ASK) < _price[1])
+            statuscode[1] = O_openOrder(_ring[_index][1], 0, _direction, _lots, SymbolInfoDouble(_ring[_index][1], SYMBOL_ASK), _magicnumber, IntegerToString(_index) + "#2" + commentText);
+        else if(b_c_direction==1 && SymbolInfoDouble(_ring[_index][1], SYMBOL_BID) > _price[1])
+            statuscode[1] = O_openOrder(_ring[_index][1], 0, _direction, _lots, SymbolInfoDouble(_ring[_index][1], SYMBOL_BID), _magicnumber, IntegerToString(_index) + "#2" + commentText);
+    }
+    if(statuscode[1] == 10009)
+        N_outputLog("nst_ta - Second order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "]", "Trading info");
+    else
+    {
+        N_outputLog("nst_ta - Second order can not be send. open limit order. [" + _ring[_index][1] + "][" + IntegerToString(GetLastError()) + "]", "Trading error");
+
+        limit_direction = b_c_direction + 2;
+
+        statuscode[1] = O_openOrder(_ring[_index][1], 1, limit_direction, _lots, _price[1], _magicnumber, IntegerToString(_index) + "#2" + commentText);
+        if(statuscode[1] == 10009)
+            N_outputLog("nst_ta - Second limit order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "]", "Trading info");
+        else
+            N_outputLog("nst_ta - Second limit order can not be send. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "][" + IntegerToString(GetLastError()) + "]", "Trading error");
+    }
+
+    
+    //-- open order c
+    statuscode[2] = O_openOrder(_ring[_index][2], 0, _direction, c_lots, _price[2], _magicnumber, IntegerToString(_index) + "#3" + commentText);
+    if(statuscode[2] == 10015)
+    {
+        if(b_c_direction==0 && SymbolInfoDouble(_ring[_index][2], SYMBOL_ASK) < _price[2])
+            statuscode[2] = O_openOrder(_ring[_index][2], 0, _direction, c_lots, SymbolInfoDouble(_ring[_index][2], SYMBOL_ASK), _magicnumber, IntegerToString(_index) + "#3" + commentText);
+        else if(b_c_direction==1 && SymbolInfoDouble(_ring[_index][2], SYMBOL_BID) > _price[2])
+            statuscode[2] = O_openOrder(_ring[_index][2], 0, _direction, c_lots, SymbolInfoDouble(_ring[_index][2], SYMBOL_BID), _magicnumber, IntegerToString(_index) + "#3" + commentText);
+    }
+    if(statuscode[2] == 10009)
+        N_outputLog("nst_ta - Third order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][2] + "]", "Trading info");
+    else
+    {
+        N_outputLog("nst_ta - Third order can not be send. open limit order. [" + _ring[_index][2] + "][" + IntegerToString(GetLastError()) + "]", "Trading error");
+
+        limit_direction = b_c_direction + 2;
+
+        statuscode[2] = O_openOrder(_ring[_index][2], 1, limit_direction, c_lots, _price[2], _magicnumber, IntegerToString(_index) + "#3" + commentText);
+        if(statuscode[2] == 10009)
+            N_outputLog("nst_ta - Third limit order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][2] + "]", "Trading info");
+        else
+            N_outputLog("nst_ta - Third limit order can not be send. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][2] + "][" + IntegerToString(GetLastError()) + "]", "Trading error");
+    }
+
+    return(true);
+}
+
+//--
+int O_openOrder(string _symbol, int _action, int _direction, double _lots, double _price, int _magicnumber, string _comment)
+{
+   MqlTradeRequest request;
+   request.action = O_getAction(_action); 
+   request.type   = O_getType(_direction);
+   request.magic  = _magicnumber;
+   request.symbol = _symbol;
+   request.volume = _lots;
+   request.price  = _price;
+   request.comment= _comment;
+   request.sl     = 0;
+   request.tp     = 0;
+ 
+   MqlTradeResult result;
+   OrderSend(request, result);
+
+   return result.retcode;
+}
+
+//--
+ENUM_TRADE_REQUEST_ACTIONS O_getAction(int _idx)
+{
+   switch(_idx)
+   {
+      case(0):return(TRADE_ACTION_DEAL);
+      case(1):return(TRADE_ACTION_PENDING);
+      case(2):return(TRADE_ACTION_SLTP);
+      case(3):return(TRADE_ACTION_MODIFY);
+      case(4):return(TRADE_ACTION_REMOVE);
+   }
+   return(WRONG_VALUE);
+}
+
+//-- 
+ENUM_ORDER_TYPE O_getType(int _idx)
+{
+   switch(_idx)
+   {
+      case(0):return(ORDER_TYPE_BUY);
+      case(1):return(ORDER_TYPE_SELL);
+      case(2):return(ORDER_TYPE_BUY_LIMIT);
+      case(3):return(ORDER_TYPE_SELL_LIMIT);
+      case(4):return(ORDER_TYPE_BUY_STOP);
+      case(5):return(ORDER_TYPE_SELL_STOP);
+      case(6):return(ORDER_TYPE_BUY_STOP_LIMIT);
+      case(7):return(ORDER_TYPE_SELL_STOP_LIMIT);
+   }
+   return(WRONG_VALUE);
+}
+
+//--
+bool O_checkLots(string _symbol, double _lots)
+{
+   double min = SymbolInfoDouble(_symbol, SYMBOL_VOLUME_MIN);
+   double max = SymbolInfoDouble(_symbol, SYMBOL_VOLUME_MAX);
+   int    setp= (int)(_lots * 100000) % (int)(SymbolInfoDouble(_symbol, SYMBOL_VOLUME_STEP) * 100000);
+   
+   if(_lots >= min && _lots <= max && setp == 0)
+      return(true);
+   else
+      return(false);
 }
 
 
