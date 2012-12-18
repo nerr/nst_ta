@@ -1,7 +1,5 @@
 /*
  * >>>TODO:
- * []calculate lots funcs
- * []open ring chance
  *
  */
 
@@ -363,7 +361,7 @@ bool O_openRing(int _direction, int _index, double &_price[], double _fpi, strin
         N_outputLog("nst_ta - First order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "]", "Trading info");
     else
     {
-        N_outputLog("nst_ta - First order can not be send. cancel ring. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "][" + IntegerToString(GetLastError()) + "]", "Trading error");
+        N_outputLog("nst_ta - First order can not be send. cancel ring. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "][Code:" + IntegerToString(statuscode[0]) + "]", "Trading error");
         return(false);
     }
 
@@ -380,7 +378,7 @@ bool O_openRing(int _direction, int _index, double &_price[], double _fpi, strin
         N_outputLog("nst_ta - Second order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "]", "Trading info");
     else
     {
-        N_outputLog("nst_ta - Second order can not be send. open limit order. [" + _ring[_index][1] + "][" + IntegerToString(GetLastError()) + "]", "Trading error");
+        N_outputLog("nst_ta - Second order can not be send. open limit order. [" + _ring[_index][1] + "][Code:" + IntegerToString(statuscode[0]) + "]", "Trading error");
 
         limit_direction = b_c_direction + 2;
 
@@ -388,7 +386,7 @@ bool O_openRing(int _direction, int _index, double &_price[], double _fpi, strin
         if(statuscode[1] == 10009)
             N_outputLog("nst_ta - Second limit order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "]", "Trading info");
         else
-            N_outputLog("nst_ta - Second limit order can not be send. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "][" + IntegerToString(GetLastError()) + "]", "Trading error");
+            N_outputLog("nst_ta - Second limit order can not be send. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "][Code:" + IntegerToString(statuscode[0]) + "]", "Trading error");
     }
 
     
@@ -405,7 +403,7 @@ bool O_openRing(int _direction, int _index, double &_price[], double _fpi, strin
         N_outputLog("nst_ta - Third order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][2] + "]", "Trading info");
     else
     {
-        N_outputLog("nst_ta - Third order can not be send. open limit order. [" + _ring[_index][2] + "][" + IntegerToString(GetLastError()) + "]", "Trading error");
+        N_outputLog("nst_ta - Third order can not be send. open limit order. [" + _ring[_index][2] + "][Code:" + IntegerToString(statuscode[0]) + "]", "Trading error");
 
         limit_direction = b_c_direction + 2;
 
@@ -413,7 +411,7 @@ bool O_openRing(int _direction, int _index, double &_price[], double _fpi, strin
         if(statuscode[2] == 10009)
             N_outputLog("nst_ta - Third limit order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][2] + "]", "Trading info");
         else
-            N_outputLog("nst_ta - Third limit order can not be send. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][2] + "][" + IntegerToString(GetLastError()) + "]", "Trading error");
+            N_outputLog("nst_ta - Third limit order can not be send. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][2] + "][Code:" + IntegerToString(statuscode[0]) + "]", "Trading error");
     }
 
     return(true);
