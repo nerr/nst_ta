@@ -8,8 +8,8 @@
 #property indicator_level1 0.0
 
 //--- buffers
-double ExtMapBuffer1[];
-double ExtMapBuffer2[];
+double sSwap[];
+double lSwap[];
 
 //-- extern items
 extern string SYMBOL = "";
@@ -22,9 +22,9 @@ int init()
     IndicatorShortName("Swap Monitor - " + SYMBOL);
 
     SetIndexStyle(0,DRAW_LINE);
-    SetIndexBuffer(0,ExtMapBuffer1);
+    SetIndexBuffer(0,sSwap);
     SetIndexStyle(1,DRAW_LINE);
-    SetIndexBuffer(1,ExtMapBuffer2);
+    SetIndexBuffer(1,lSwap);
     
     return(0);
 }
@@ -33,8 +33,8 @@ int start()
 {   
     if(isNewBar() == true)
     {
-        ExtMapBuffer1[0] = MarketInfo(SYMBOL, MODE_SWAPSHORT);
-        ExtMapBuffer2[0] = MarketInfo(SYMBOL, MODE_SWAPLONG);
+        sSwap[0] = MarketInfo(SYMBOL, MODE_SWAPSHORT);
+        lSwap[0] = MarketInfo(SYMBOL, MODE_SWAPLONG);
     }
     return(0);
 }
@@ -43,11 +43,11 @@ bool isNewBar()
 {
     static int t = 0;
 
-    if(t < iTime (0 , 0 , 0))
+    if(t < iTime(0 , 0 , 0))
     {
-      t = iTime (0 , 0 , 0) ; 
-      return(TRUE) ; 
+      t = iTime(0 , 0 , 0); 
+      return(true); 
     } 
     else
-      return(FALSE);
+      return(false);
 }
