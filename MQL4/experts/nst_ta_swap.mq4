@@ -19,7 +19,6 @@
 
 
 //-- include mqh file
-#include <sqlite.mqh>
 #include <nst_ta_public.mqh>
 
 
@@ -32,7 +31,7 @@
 extern string 	TradeSetting 	= "---------Trade Setting--------";
 extern bool 	EnableTrade 	= true;
 extern double 	BaseLots    	= 1;
-extern int 		MagicNumber 	= 99902;
+extern int 		MagicNumber 	= 701;
 
 
 
@@ -42,10 +41,9 @@ extern int 		MagicNumber 	= 99902;
  */
 
 string 	Ring[2, 3];
-string 	db_name 	= "D:\\Documents\\alpariukswaptest.db";
-string 	db_table	= "dayinfo";
-
-
+string 	db_name 		= "D:\\Documents\\alpariukswaptest.db";
+string 	db_ordertable	= "dayinfo";
+string 	db_accounttable	= "accountinfo";
 
 /* 
  * System Funcs
@@ -78,8 +76,6 @@ int deinit()
 //-- start
 int start()
 {
-	
-
 	if(Hour()==0 && Minute==0 && Seconds()==0)
 		D_logOrderInfo();
 
@@ -105,7 +101,7 @@ void D_logOrderInfo()
 
 	query = "SELECT datetime FROM " + db_table + " Where datetime LIKE'" + currdate + "%' LIMIT 1";
 	int cols[1];
-    int handle = sqlite_query (db, "select * from test", cols);
+    int handle = sqlite_query(db, "select * from test", cols);
     if(cols > 0)
     	return(0);
 
