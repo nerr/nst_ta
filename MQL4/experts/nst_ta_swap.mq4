@@ -27,11 +27,7 @@
  * define extern
  *
  */
-
-extern string 	TradeSetting 	= "---------Trade Setting--------";
-extern bool 	EnableTrade 	= true;
-extern double 	BaseLots    	= 1;
-extern int 		MagicNumber 	= 701;
+extern int MagicNumber     = 701;
 
 
 
@@ -40,10 +36,14 @@ extern int 		MagicNumber 	= 701;
  *
  */
 
-string 	Ring[2, 3];
-string 	db_name 		= "D:\\Documents\\alpariukswaptest.db";
-string 	db_ordertable	= "dayinfo";
-string 	db_accounttable	= "accountinfo";
+string Ring[2, 3], SymExt;
+string db_name     = "D:\\Documents\\alpariukswaptest.db";
+string db_table    = "dayinfo";
+
+double FPI[2, 7];
+int RingNum = 2;
+
+
 
 /* 
  * System Funcs
@@ -53,99 +53,243 @@ string 	db_accounttable	= "accountinfo";
 //-- init
 int init()
 {
-	if (!D_checkTableExists(db_name, db_table))
-		sendAlert("db is not exists.", "Error");
+    Ring[0][0] = "USDJPY"; Ring[0][1] = "USDMXN"; Ring[0][2] = "MXNJPY";
+    Ring[1][0] = "EURJPY"; Ring[1][1] = "EURMXN"; Ring[1][2] = "MXNJPY";
 
-	Ring[0][0] = "USDJPY"; Ring[0][1] = "USDMXN"; Ring[0][2] = "MXNJPY";
-	Ring[1][0] = "EURJPY"; Ring[1][1] = "EURMXN"; Ring[1][2] = "MXNJPY";
+    if(StringLen(Symbol()) > 6)
+        SymExt = StringSubstr(Symbol(),6);
 
-	if(StringLen(Symbol()) > 6)
-		SymExt = StringSubstr(Symbol(),6);
+    //-- initDebugInfo
+    initDebugInfo(Ring);
 
-	//-- initDebugInfo
-	initDebugInfo(Ring);
-	return(0);
+    return(0);
 }
 
 //-- deinit
 int deinit()
 {
-	return(0);
+    return(0);
 }
 
 //-- start
 int start()
 {
-	if(Hour()==0 && Minute==0 && Seconds()==0)
-		D_logOrderInfo();
-
-	return(0);
+    //if(Hour()==0 && Minute()==0 && Seconds()==0){}
+        //D_logOrderInfo();
+	getFPI(FPI, Ring);
+	updateFpiInfo(FPI);
+	updateAccountInfo();
+	updateSwapInfo(Ring);
+    return(0);
 }
 
 
-
-
-
-
-
-/*
- *
- * functions about db
- *
- */
-void D_logOrderInfo()
+//-- init debug info object on chart
+void initDebugInfo(string _ring[][])
 {
-	string query;
-	string currtime = TimeToStr(TimeLocal(),TIME_DATE|TIME_SECONDS);
-	string currdate = TimeToStr(TimeLocal(),TIME_DATE);
+    ObjectsDeleteAll();
 
-	query = "SELECT datetime FROM " + db_table + " Where datetime LIKE'" + currdate + "%' LIMIT 1";
-	int cols[1];
-    int handle = sqlite_query(db, "select * from test", cols);
-    if(cols > 0)
-    	return(0);
+    color titlecolor = C'0xd9,0x26,0x59';
+    int y, i, j;
+    int ringnum = ArrayRange(_ring, 0);
 
+    //-- set background
+    createTextObj("_background", 15, 15, "g", C'0x27,0x28,0x22', "Webdings", 600);
 
+    //-- set fpi table
+    y += 15;
+    createTextObj("fpi_header", 25,    y, ">>> Rings(" + ringnum + ") & FPI", titlecolor);
+    y += 15;
+    string fpiTableHeaderName[10] = {"Id", "SymbolA", "SymbolB", "SymbolC", "lFPI", "lLowest", "sFPI", "sHighest", "lThold", "sThold"};
+    int    fpiTableHeaderX[10]    = {25, 50, 115, 181, 250, 325, 400, 475, 550, 625};
+    for(i = 0; i < 11; i++)
+        createTextObj("fpi_header_col_" + i, fpiTableHeaderX[i], y, fpiTableHeaderName[i]);
 
-	int ordertotal = OrdersTotal();
-	query = "INSERT INTO " + db_table + " (datetime,ticket,symbol,type,size,openprice,closeprice,commission,profit,swap) ";
-	for(int i = 0; i < ordertotal; i++)
-	{
-		if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
-		{
-			if(OrderMagicNumber() == 99902)
-			{
-				query = StringConcatenate(
-					query,
-					"select \"" + currtime + "\", " + OrderTicket() + ", \"" + OrderSymbol() + "\", ",
-					OrderType() + ", " + OrderLots() + ", " + OrderOpenPrice() + ", ",
-					OrderClosePrice() + ", " + OrderCommission() + ", " + OrderProfit() + ", " + OrderSwap() + " union all "
-				);
-			}
-		}
-	}
+    for(i = 0; i < ringnum; i ++)
+    {
+        y += 15;
 
-	query = StringSubstr(query, 0, StringLen(query) - 11);
-	
-	D_exec(db_name, query);
+        for (j = 0; j < 10; j ++) 
+        {
+            if(j == 0) 
+                createTextObj("fpi_body_row_" + (i) + "_col_" + (j), fpiTableHeaderX[j], y, (i+1), Gray);
+            else if(j > 0 & j < 4) 
+                createTextObj("fpi_body_row_" + (i) + "_col_" + (j), fpiTableHeaderX[j], y, _ring[i][j-1], White);
+            else 
+                createTextObj("fpi_body_row_" + (i) + "_col_" + (j), fpiTableHeaderX[j], y);
+        }
+    }
+
+    //-- set swap table
+    y += 15 * 2;
+    createTextObj("swap_header", 25, y, ">>> Swap Estimate (1 Lots) [SR/ODS]", titlecolor);
+    int swapTableHeaderX[5] = {25, 50, 200, 350, 500};
+    int swapTableValueX[7] = {50, 100, 200, 250, 350, 400, 500};
+    for(i = 0; i < ringnum; i ++)
+    {
+        y += 15;
+        createTextObj("swap_header_row_" + i + "_col_0", swapTableHeaderX[0], y, (i+1), Gray);
+        for(j = 0; j < 3; j++)
+        	createTextObj("swap_header_row_" + i + "_col_" + (j+1), swapTableHeaderX[j+1], y, _ring[i][j]);
+        createTextObj("swap_header_row_" + i + "_col_4", swapTableHeaderX[4], y, "Total");
+
+        y += 15;
+        for(j = 0; j < 7; j++)
+        	createTextObj("swap_value_row_" + i + "_col_" + j, swapTableValueX[j], y, "", White);
+    }
+
+    //-- set account table
+    y += 15 * 2;
+    createTextObj("account_header", 25, y, ">>> Account Info", titlecolor);
+    string accountTableName[5] = {"Balance", "Profit/Loss", "Equity", "Used Margin", "Free Margin"};
+    int accountTableX[5] = {25, 100, 200, 300, 400};
+    y += 15;
+    for(i = 0; i < 5; i++)
+    {
+    	createTextObj("account_header_col_" + i, accountTableX[i], y, accountTableName[i]);
+    	createTextObj("account_value_col_" + i, accountTableX[i], (y + 15), "", White);
+    }
+
+    //-- set order table
+    y += 15 * 3;
+    createTextObj("order_header", 25, y, ">>> Order Summary", titlecolor);
+    string orderTableName[6] = {"Symbol", "Size(Lot)", "Profit/Loss", "Commission", "Swap", "Total"};
+    int orderTableX[6] = {25, 100, 200, 300, 400, 500};
+    y += 15;
+    for(i = 0; i < 6; i++)
+    {
+    	createTextObj("order_header_col_" + i, orderTableX[i], y, orderTableName[i]);
+    }
 }
 
-bool D_checkTableExists(string _db, string _table)
+void updateSwapInfo(string &_ring[][3])
 {
-	int res = sqlite_table_exists (_db, _table);
+	double sinfo[7];
 
-	if(res < 0) {
-		outputLog("Check for table existence failed with code " + res, "Error");
-		return(false);
-	}
+	for(int i = 0; i < ArrayRange(_ring, 0); i++)
+    {
+        sinfo[0] = MarketInfo(_ring[i][0], MODE_SWAPLONG);
+        sinfo[2] = MarketInfo(_ring[i][1], MODE_SWAPSHORT);
+        sinfo[4] = MarketInfo(_ring[i][2], MODE_SWAPSHORT);
+        
+        if(StringSubstr(_ring[i][0], 0, 3) == "USD")
+        {
+        	sinfo[1] = sinfo[0];
+        	sinfo[3] = sinfo[2] / MarketInfo(_ring[i][2], MODE_ASK);
+        	sinfo[5] = sinfo[4] * MarketInfo(_ring[i][1], MODE_ASK) / MarketInfo(_ring[i][0], MODE_ASK);
+        }
+        else if(StringSubstr(_ring[i][0], 0, 3) == "EUR")
+        {
+        	sinfo[1] = sinfo[0] * MarketInfo("EURUSD", MODE_BID);
+        	sinfo[3] = sinfo[2] / MarketInfo("USDMXN", MODE_ASK);
+        	sinfo[5] = sinfo[4] * MarketInfo(_ring[i][1], MODE_ASK) / MarketInfo("USDJPY", MODE_ASK);
+        }
 
-	return(res > 0);
+        sinfo[6] = sinfo[1] + sinfo[3] + sinfo[5];
+
+        for(int j = 0; j < 7; j++)
+        {
+        	if(j==0 || j==2 || j==4)
+        		setTextObj("swap_value_row_" + i + "_col_" + j, DoubleToStr(sinfo[j], 2), White);
+        	else
+        		setTextObj("swap_value_row_" + i + "_col_" + j, DoubleToStr(sinfo[j], 2), C'0xe6,0xdb,0x74');
+        }
+    }
 }
 
-void D_exec(string _db, string _exp)
+void updateAccountInfo()
 {
-	int res = sqlite_exec (_db, _exp);
+	double ainfo[5];
+	ainfo[0] = AccountBalance();
+	ainfo[1] = AccountProfit();
+	ainfo[2] = AccountEquity();
+	ainfo[3] = AccountMargin();
+	ainfo[4] = AccountFreeMargin();
 
-	if(res != 0)
-		outputLog("Expression '" + _exp + "' failed with code " + res, "Error");
+	for(int i = 0; i < 5; i++)
+    	setTextObj("account_value_col_" + i, DoubleToStr(ainfo[i], 2), White);
+}
+
+
+void updateFpiInfo(double &_fpi[][7])
+{
+    int digit = 7;
+    string prefix = "fpi_body_row_";
+    string row = "", col = "";
+
+    for(int i = 0; i < RingNum; i++)    //-- row 5 to row 10
+    {
+        row = (i);
+
+        setTextObj(prefix + row + "_col_4", DoubleToStr(_fpi[i][0], digit), DeepSkyBlue);
+        setTextObj(prefix + row + "_col_5", DoubleToStr(_fpi[i][1], digit));
+        setTextObj(prefix + row + "_col_6", DoubleToStr(_fpi[i][2], digit), DeepSkyBlue);
+        setTextObj(prefix + row + "_col_7", DoubleToStr(_fpi[i][3], digit));
+        if(_fpi[i][4] > 0)
+        {
+            setTextObj(prefix + row + "_col_8", DoubleToStr(_fpi[i][4], digit), C'0xe6,0xdb,0x74');
+            setTextObj(prefix + row + "_col_9", DoubleToStr(_fpi[i][5], digit), C'0xe6,0xdb,0x74');
+        }
+        else
+        {
+            setTextObj(prefix + row + "_col_8", DoubleToStr(_fpi[i][4], digit));
+            setTextObj(prefix + row + "_col_9", DoubleToStr(_fpi[i][5], digit));
+        }
+    }
+}
+
+void getFPI(double &_fpi[][7], string &_ring[][3])
+{
+    double l_price[3];
+    double s_price[3];
+
+    for(int i = 0; i < RingNum; i ++)
+    {
+        for(int x = 0; x < 3; x++)
+        {
+            if(x == 0)
+            {
+                l_price[x] = MarketInfo(_ring[i][x], MODE_ASK);
+                s_price[x] = MarketInfo(_ring[i][x], MODE_BID);
+            }
+            else
+            {
+            	l_price[x] = MarketInfo(_ring[i][x], MODE_BID);
+                s_price[x] = MarketInfo(_ring[i][x], MODE_ASK);
+            }
+        }
+        
+        //-- long
+        if(l_price[0] > 0 && l_price[1] > 0 && l_price[2] > 0)
+        {
+            _fpi[i][0] = l_price[0] / (l_price[1] * l_price[2]);
+            //-- buy FPI history
+            if(_fpi[i][1] == 0 || _fpi[i][0] < _fpi[i][1]) 
+                _fpi[i][1] = _fpi[i][0];
+        }
+        else
+            _fpi[i][0] = 0;
+
+        //-- short
+        if(s_price[0] > 0 && s_price[1] > 0 && s_price[2] > 0)
+        {
+            _fpi[i][2] = s_price[0] / (s_price[1] * s_price[2]);
+            //-- sell FPI history
+            if(_fpi[i][3] == 0 || _fpi[i][2] > _fpi[i][3]) 
+                _fpi[i][3] = _fpi[i][2];
+        }
+        else
+            _fpi[i][2] = 0;
+
+        //-- sH-bL
+        if(_fpi[i][6]==0 || _fpi[i][3] - _fpi[i][1] > _fpi[i][6])
+            _fpi[i][6] = _fpi[i][3] - _fpi[i][1];
+
+        //-- auto set fpi thold
+        if(_fpi[i][6] >= 0.002 && _fpi[i][4] == 0 && _fpi[i][5] == 0 && _fpi[i][1] != 0 && _fpi[i][3] != 0)
+        {
+            _fpi[i][4] = _fpi[i][1]; //-- 
+            _fpi[i][5] = _fpi[i][3]; //--
+        }
+    }
 }
