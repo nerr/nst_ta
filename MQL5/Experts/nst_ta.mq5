@@ -232,7 +232,7 @@ void R_getFPI(double &_fpi[][7], string &_ring[][3])
     {
         for(int x = 0; x < 3; x++)
         {
-            csymbolinfo.Name(Ring[i][x])
+            csymbolinfo.Name(Ring[i][x]);
             if(csymbolinfo.RefreshRates())
             {
                 if(x == 0)
