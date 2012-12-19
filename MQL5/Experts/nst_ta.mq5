@@ -99,6 +99,9 @@ void OnDeinit(const int reason)
 void OnTick()
 {
     run();
+    
+    if(LogPriceToDB == true)
+        DB_logFpi2DB(DBLogTable, FPI);
 }
 
 void OnTimer()
@@ -136,9 +139,6 @@ void run()
     D_updateFpiInfo(FPI);
 
     D_updateSettingInfo();
-
-    if(LogPriceToDB == true)
-        DB_logFpi2DB(DBLogTable, FPI);
 }
 
 
