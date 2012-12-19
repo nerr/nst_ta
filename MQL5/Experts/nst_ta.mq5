@@ -38,7 +38,12 @@ extern bool   EnableNotifi  = true;
  */
 #include <Trade\SymbolInfo.mqh>
 #include <Trade\Trade.mqh>
+#include <Database\EAX_MySQL.mqh>
 
+
+
+CSymbolInfo *csymbolinfo = new CSymbolInfo();
+EAX_MySQL *mysql = new EAX_MySQL();
 
 
 /*
@@ -48,7 +53,6 @@ extern bool   EnableNotifi  = true;
 string  Ring[][3];
 int     RingNum;
 double  FPI[][7];
-
 int     orderTableHeaderX[10] = {760, 790, 855, 920, 985, 1060, 1130, 1200, 1270, 1330};
 
 
@@ -221,8 +225,6 @@ void R_getSymbols(string &_symbols[])
  */
 void R_getFPI(double &_fpi[][7], string &_ring[][3])
 {
-    CSymbolInfo *csymbolinfo = new CSymbolInfo();
-
     double l_price[3];
     double s_price[3];
 
