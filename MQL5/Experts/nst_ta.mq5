@@ -29,6 +29,14 @@ extern double BaseLots      = 0.5;
 extern int    MagicNumber   = 99901;
 extern string NotifSetting  = "---------Notification Setting--------";
 extern bool   EnableNotifi  = true;
+extern string MySQLSetting  = "---------MySQL Setting--------";   
+extern bool   LogPriceToDB  = true;
+extern string DBHost        = "127.0.0.1";
+extern string DBUser        = "root";
+extern string DBPass        = "911911";
+extern string DBName        = "metatrader";
+extern string DBLogTable    = "nst_ta_log_alpariuk833";
+extern string DBTholdTable  = "nst_ta_thold_alpariuk833";
 
 
 
@@ -74,6 +82,9 @@ int OnInit()
 
     ArrayResize(FPI, RingNum);
     FPI[0][1] = 0.0;  //-- why init value is not zero?
+
+    //-- about mysql
+    mysql.connect(DBHost, DBUser, DBPass, DBName);
 
     return(0);
 }
@@ -125,6 +136,9 @@ void run()
     D_updateFpiInfo(FPI);
 
     D_updateSettingInfo();
+
+    if(LogPriceToDB == true)
+        DB_logFpi2DB(DBLogTable, FPI);
 }
 
 
@@ -644,6 +658,26 @@ void D_updateFpiInfo(double &_fpi[][7])
     }
 }
 
+
+
+/*
+ * MySQL Functions
+ *
+ */
+void DB_logFpi2DB(string _table, double &_fpi[][7])
+{
+    string marketdate = TimeToString(TimeCurrent(),TIME_DATE|TIME_MINUTES);
+
+    for(int i = 0; i < RingNum; i++)
+    {
+        mysql.AddNew(_table);
+        mysql.set("ringidx", i);
+        mysql.set("lthold", _fpi[i][0]);
+        mysql.set("sthold", _fpi[i][2]);
+        mysql.set("marketdate", marketdate);
+        mysql.write();
+    }
+}
 
 
 /*
