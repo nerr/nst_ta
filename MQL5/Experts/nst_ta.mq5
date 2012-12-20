@@ -22,21 +22,21 @@
  * Extern Items
  *
  */
-extern string TradeSetting  = "---------Trade Setting--------";
-extern bool   EnableTrade   = true;
-extern bool   Superaddition = false;
-extern double BaseLots      = 0.5;
-extern int    MagicNumber   = 99901;
-extern string NotifSetting  = "---------Notification Setting--------";
-extern bool   EnableNotifi  = true;
-extern string MySQLSetting  = "---------MySQL Setting--------";   
-extern bool   LogPriceToDB  = true;
-extern string DBHost        = "127.0.0.1";
-extern string DBUser        = "root";
-extern string DBPass        = "911911";
-extern string DBName        = "metatrader";
-extern string DBLogTable    = "nst_ta_log_alpariuk833";
-extern string DBTholdTable  = "nst_ta_thold_alpariuk833";
+input string TradeSetting  = "---------Trade Setting--------";
+input bool   EnableTrade   = true;
+input bool   Superaddition = false;
+input double BaseLots      = 0.5;
+input int    MagicNumber   = 99901;
+input string NotifSetting  = "---------Notification Setting--------";
+input bool   EnableNotifi  = true;
+input string MySQLSetting  = "---------MySQL Setting--------";   
+input bool   LogPriceToDB  = true;
+input string DBHost        = "127.0.0.1";
+input string DBUser        = "root";
+input string DBPass        = "911911";
+input string DBName        = "metatrader";
+input string DBLogTable    = "nst_ta_log_alpariuk833";
+input string DBTholdTable  = "nst_ta_thold_alpariuk833";
 
 
 
