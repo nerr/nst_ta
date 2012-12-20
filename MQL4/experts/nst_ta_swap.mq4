@@ -199,6 +199,7 @@ void updateOrderInfo(int _mn)
 			if(OrderMagicNumber() == _mn)
 			{
 				idx = checkSymbolIdx(OrderSymbol());
+				oinfo[idx][4] = 0;
 
 				oinfo[idx][0] += OrderLots();
 				oinfo[idx][1] += OrderProfit();
