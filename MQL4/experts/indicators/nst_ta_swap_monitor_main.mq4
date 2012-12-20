@@ -16,7 +16,7 @@
 #property copyright "Copyright ? 2012 Nerrsoft.com"
 #property link      "http://nerrsoft.com"
 
-
+#property indicator_chart_window
 
 //-- include mqh file
 #include <nst_ta_public.mqh>
@@ -79,11 +79,11 @@ int start()
 {
     //if(Hour()==0 && Minute()==0 && Seconds()==0){}
         //D_logOrderInfo();
-	getFPI(FPI, Ring);
-	updateFpiInfo(FPI);
-	updateAccountInfo();
-	updateSwapInfo(Ring);
-	updateOrderInfo(MagicNumber);
+    getFPI(FPI, Ring);
+    updateFpiInfo(FPI);
+    updateAccountInfo();
+    updateSwapInfo(Ring);
+    updateOrderInfo(MagicNumber);
     return(0);
 }
 
@@ -134,12 +134,12 @@ void initDebugInfo(string _ring[][])
         y += 15;
         createTextObj("swap_header_row_" + i + "_col_0", swapTableHeaderX[0], y, (i+1), Gray);
         for(j = 0; j < 3; j++)
-        	createTextObj("swap_header_row_" + i + "_col_" + (j+1), swapTableHeaderX[j+1], y, _ring[i][j]);
+            createTextObj("swap_header_row_" + i + "_col_" + (j+1), swapTableHeaderX[j+1], y, _ring[i][j]);
         createTextObj("swap_header_row_" + i + "_col_4", swapTableHeaderX[4], y, "Total");
 
         y += 15;
         for(j = 0; j < 7; j++)
-        	createTextObj("swap_value_row_" + i + "_col_" + j, swapTableValueX[j], y, "", White);
+            createTextObj("swap_value_row_" + i + "_col_" + j, swapTableValueX[j], y, "", White);
     }
 
     //-- set account table
@@ -150,8 +150,8 @@ void initDebugInfo(string _ring[][])
     y += 15;
     for(i = 0; i < 5; i++)
     {
-    	createTextObj("account_header_col_" + i, accountTableX[i], y, accountTableName[i]);
-    	createTextObj("account_value_col_" + i, accountTableX[i], (y + 15), "", White);
+        createTextObj("account_header_col_" + i, accountTableX[i], y, accountTableName[i]);
+        createTextObj("account_value_col_" + i, accountTableX[i], (y + 15), "", White);
     }
 
     //-- set order table
@@ -162,101 +162,101 @@ void initDebugInfo(string _ring[][])
     y += 15;
     for(i = 0; i < 6; i++)
     {
-    	createTextObj("order_header_col_" + i, orderTableX[i], y, orderTableName[i]);
+        createTextObj("order_header_col_" + i, orderTableX[i], y, orderTableName[i]);
     }
 }
 
 void updateOrderInfo(int _mn)
 {
-	string prefix = "order_body_row_";
-	int j, i, y = 255;
-	double oinfo[5][5]; //--size; profit; commission; swap; total;
-	double sum[5];
+    string prefix = "order_body_row_";
+    int j, i, y = 255;
+    double oinfo[5][5]; //--size; profit; commission; swap; total;
+    double sum[5];
 
-	
+    
 
 
-	for(i = 0; i < 6; i ++)
-	{
-		for(j = 0; j < 6; j ++)
-		{
-			if(ObjectType(prefix + i + "_col_" + j) > 0)
-				ObjectDelete(prefix + i + "_col_" + j);
+    for(i = 0; i < 6; i ++)
+    {
+        for(j = 0; j < 6; j ++)
+        {
+            if(ObjectType(prefix + i + "_col_" + j) > 0)
+                ObjectDelete(prefix + i + "_col_" + j);
 
-			oinfo[i][j] = 0;
-		}
+            oinfo[i][j] = 0;
+        }
 
-		if(ObjectType("order_summary_col_" + i) > 0)
-			ObjectDelete("order_summary_col_" + i);
-	}
+        if(ObjectType("order_summary_col_" + i) > 0)
+            ObjectDelete("order_summary_col_" + i);
+    }
 
-	
-	int idx;
-	for(i = 0; i < OrdersTotal(); i++)
-	{
-		if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
-		{
-			if(OrderMagicNumber() == _mn)
-			{
-				idx = checkSymbolIdx(OrderSymbol());
-				oinfo[idx][4] = 0;
+    
+    int idx;
+    for(i = 0; i < OrdersTotal(); i++)
+    {
+        if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+        {
+            if(OrderMagicNumber() == _mn)
+            {
+                idx = checkSymbolIdx(OrderSymbol());
+                oinfo[idx][4] = 0;
 
-				oinfo[idx][0] += OrderLots();
-				oinfo[idx][1] += OrderProfit();
-				oinfo[idx][2] += OrderCommission();
-				oinfo[idx][3] += OrderSwap();
+                oinfo[idx][0] += OrderLots();
+                oinfo[idx][1] += OrderProfit();
+                oinfo[idx][2] += OrderCommission();
+                oinfo[idx][3] += OrderSwap();
 
-				oinfo[idx][4] += oinfo[idx][1] + oinfo[idx][2] + oinfo[idx][3];
-			}
-		}
-	}
-   	
-	for(i = 0; i < 6; i ++)
-	{
-		if(oinfo[i][0] > 0)
-		{
-			y += 15;
-			createTextObj(prefix + i + "_col_0", orderTableX[0], y, SymbolArr[i], White);
-			for(j = 1; j < 6; j ++)
-			{
-				createTextObj(prefix + i + "_col_" + j, orderTableX[j], y, DoubleToStr(oinfo[i][j-1], 2), White);
-				sum[j-1] += oinfo[i][j-1];
-			}
-		}
-	}
+                oinfo[idx][4] += oinfo[idx][1] + oinfo[idx][2] + oinfo[idx][3];
+            }
+        }
+    }
+    
+    for(i = 0; i < 6; i ++)
+    {
+        if(oinfo[i][0] > 0)
+        {
+            y += 15;
+            createTextObj(prefix + i + "_col_0", orderTableX[0], y, SymbolArr[i], White);
+            for(j = 1; j < 6; j ++)
+            {
+                createTextObj(prefix + i + "_col_" + j, orderTableX[j], y, DoubleToStr(oinfo[i][j-1], 2), White);
+                sum[j-1] += oinfo[i][j-1];
+            }
+        }
+    }
 
-	if(y > 255)
-	{
-		y += 15;
-		createTextObj("order_summary_col_0", 25, y, "Summary", C'0xd9,0x26,0x59');
+    if(y > 255)
+    {
+        y += 15;
+        createTextObj("order_summary_col_0", 25, y, "Summary", C'0xd9,0x26,0x59');
 
-		for(i = 0; i < 5; i++)
-		{
-			if(sum[i] > 0)
-				createTextObj("order_summary_col_"+(i+1), orderTableX[i+1],y, DoubleToStr(sum[i], 2), DeepSkyBlue);
-			else
-				createTextObj("order_summary_col_"+(i+1), orderTableX[i+1],y, DoubleToStr(sum[i], 2), LightSeaGreen);
-		}
-	}
+        for(i = 0; i < 5; i++)
+        {
+            if(sum[i] > 0)
+                createTextObj("order_summary_col_"+(i+1), orderTableX[i+1],y, DoubleToStr(sum[i], 2), DeepSkyBlue);
+            else
+                createTextObj("order_summary_col_"+(i+1), orderTableX[i+1],y, DoubleToStr(sum[i], 2), LightSeaGreen);
+        }
+    }
 
-	ArrayInitialize(sum, 0);
+    ArrayInitialize(sum, 0);
 }
 
 int checkSymbolIdx(string _sym)
 {
-	for(int i = 0; i < 6; i ++)
-	{
-		if(_sym == SymbolArr[i])
-			return(i);
-	}
-	return(10);
+    for(int i = 0; i < 6; i ++)
+    {
+        if(_sym == SymbolArr[i])
+            return(i);
+    }
+    return(10);
 }
 
 void updateSwapInfo(string &_ring[][3])
 {
-	double sinfo[7];
+    double sinfo[7];
 
-	for(int i = 0; i < ArrayRange(_ring, 0); i++)
+    for(int i = 0; i < ArrayRange(_ring, 0); i++)
     {
         sinfo[0] = MarketInfo(_ring[i][0], MODE_SWAPLONG);
         sinfo[2] = MarketInfo(_ring[i][1], MODE_SWAPSHORT);
@@ -264,40 +264,40 @@ void updateSwapInfo(string &_ring[][3])
         
         if(StringSubstr(_ring[i][0], 0, 3) == "USD")
         {
-        	sinfo[1] = sinfo[0];
-        	sinfo[3] = sinfo[2] / MarketInfo(_ring[i][2], MODE_ASK);
-        	sinfo[5] = sinfo[4] * MarketInfo(_ring[i][1], MODE_ASK) / MarketInfo(_ring[i][0], MODE_ASK);
+            sinfo[1] = sinfo[0];
+            sinfo[3] = sinfo[2] / MarketInfo(_ring[i][2], MODE_ASK);
+            sinfo[5] = sinfo[4] * MarketInfo(_ring[i][1], MODE_ASK) / MarketInfo(_ring[i][0], MODE_ASK);
         }
         else if(StringSubstr(_ring[i][0], 0, 3) == "EUR")
         {
-        	sinfo[1] = sinfo[0] * MarketInfo("EURUSD", MODE_BID);
-        	sinfo[3] = sinfo[2] / MarketInfo("USDMXN", MODE_ASK);
-        	sinfo[5] = sinfo[4] * MarketInfo(_ring[i][1], MODE_ASK) / MarketInfo("USDJPY", MODE_ASK);
+            sinfo[1] = sinfo[0] * MarketInfo("EURUSD", MODE_BID);
+            sinfo[3] = sinfo[2] / MarketInfo("USDMXN", MODE_ASK);
+            sinfo[5] = sinfo[4] * MarketInfo(_ring[i][1], MODE_ASK) / MarketInfo("USDJPY", MODE_ASK);
         }
 
         sinfo[6] = sinfo[1] + sinfo[3] + sinfo[5];
 
         for(int j = 0; j < 7; j++)
         {
-        	if(j==0 || j==2 || j==4)
-        		setTextObj("swap_value_row_" + i + "_col_" + j, DoubleToStr(sinfo[j], 2), White);
-        	else
-        		setTextObj("swap_value_row_" + i + "_col_" + j, DoubleToStr(sinfo[j], 2), C'0xe6,0xdb,0x74');
+            if(j==0 || j==2 || j==4)
+                setTextObj("swap_value_row_" + i + "_col_" + j, DoubleToStr(sinfo[j], 2), White);
+            else
+                setTextObj("swap_value_row_" + i + "_col_" + j, DoubleToStr(sinfo[j], 2), C'0xe6,0xdb,0x74');
         }
     }
 }
 
 void updateAccountInfo()
 {
-	double ainfo[5];
-	ainfo[0] = AccountBalance();
-	ainfo[1] = AccountProfit();
-	ainfo[2] = AccountEquity();
-	ainfo[3] = AccountMargin();
-	ainfo[4] = AccountFreeMargin();
+    double ainfo[5];
+    ainfo[0] = AccountBalance();
+    ainfo[1] = AccountProfit();
+    ainfo[2] = AccountEquity();
+    ainfo[3] = AccountMargin();
+    ainfo[4] = AccountFreeMargin();
 
-	for(int i = 0; i < 5; i++)
-    	setTextObj("account_value_col_" + i, DoubleToStr(ainfo[i], 2), White);
+    for(int i = 0; i < 5; i++)
+        setTextObj("account_value_col_" + i, DoubleToStr(ainfo[i], 2), White);
 }
 
 
@@ -344,7 +344,7 @@ void getFPI(double &_fpi[][7], string &_ring[][3])
             }
             else
             {
-            	l_price[x] = MarketInfo(_ring[i][x], MODE_BID);
+                l_price[x] = MarketInfo(_ring[i][x], MODE_BID);
                 s_price[x] = MarketInfo(_ring[i][x], MODE_ASK);
             }
         }
