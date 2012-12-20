@@ -1,102 +1,66 @@
-/* Nerr Smart Trader - Script - close all order
- *
- * By Leon Zhuang
- * Twitter @Nerrsoft
- * leon@nerrsoft.com
- * http://nerrsoft.com
- *
- * 
- */
-
-
-
 #property copyright "Copyright ? 2012 Nerrsoft.com"
 #property link      "http://nerrsoft.com"
-
-
 
 //--
 #include <nst_ta_public.mqh>
 
+//-- switch
+bool   EnableTrade = false;
+double BaseLots = 1;
+int    RingIdx = 0; //-- 0->USDMXN; 1->EURMXN;
+double CommentID = 123;
+int    MarginBudget = 10000;
 
+int    MagicNumber = 701;
+string Ring[2][4];
 
-//
-string 	Ring[200,4], SymExt;
-double 	swap[200,7];
-double 	BaseLots = 0.5;
-int 	LotsDigit = 2;
-int 	MagicNumber = 701;
-bool 	EnableTrade = false;
-double 	t = 10;
-string 	c = "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|";
-
-
-
-int start()
+//-- begin
+void start()
 {
-	if(StringLen(Symbol()) > 6)
-		SymExt = StringSubstr(Symbol(),6);
+	string commstr = "";
+	double checkmargin = 0;
+	double lots = 0, clots = 0;
+	double freemargin = AccountFreeMargin();
 
-	//----
-	int row, col, n, m, i, j, d;
-	double _price[4];
-	string commstr;
-	double swapindi;
-	double long_a_s, short_a_s;
-	findAvailableRing(Ring, c, SymExt);
+	Ring[0][1] = "USDJPY"; Ring[0][2] = "USDMXN"; Ring[0][3] = "MXNJPY";
+	Ring[1][1] = "EURJPY"; Ring[1][2] = "EURMXN"; Ring[1][3] = "MXNJPY";
 
-	row = ArrayRange(Ring, 0);
-	ArrayResize(swap, row);
-
-	for(i = 1; i <= row; i++)
+	//-- calcu lots
+	while(checkmargin < MarginBudget)
 	{
-		for(j = 1; j <= 3; j++)
-		{
-			if(StringLen(Ring[i][j])==6)
-			{
-				n = j * 2;
-				m = n - 1;
-				swap[i][m] = MarketInfo(Ring[i][j], MODE_SWAPLONG);
-				swap[i][n] = MarketInfo(Ring[i][j], MODE_SWAPSHORT);
-			}
-		}
+		lots += BaseLots;
+		clots = lots * MarketInfo(Ring[RingIdx][2], MODE_BID);
+
+		checkmargin =  freemargin - AccountFreeMarginCheck(Ring[RingIdx][1], 0, lots);
+		checkmargin += freemargin - AccountFreeMarginCheck(Ring[RingIdx][2], 1, lots);
+		checkmargin += freemargin - AccountFreeMarginCheck(Ring[RingIdx][3], 1, clots);
 	}
 
-	for(i = 1; i < row; i++)
+	while(checkmargin > MarginBudget)
 	{
-		if(swap[i][1] > 0)
-		{
-			d = 0;
-			_price[1] = MarketInfo(Ring[i][1], MODE_ASK);
-			_price[2] = MarketInfo(Ring[i][2], MODE_BID);
-			_price[3] = MarketInfo(Ring[i][3], MODE_BID);
+		lots = lots - 0.01;
+		clots = lots * MarketInfo(Ring[RingIdx][2], MODE_BID);
 
-			swapindi = swap[i][1] + swap[i][4] + swap[i][6] * _price[2];
-		}
-		else if(swap[i][2] > 0)
-		{
-			d = 1;
-			_price[1] = MarketInfo(Ring[i][1], MODE_BID);
-			_price[2] = MarketInfo(Ring[i][2], MODE_ASK);
-			_price[3] = MarketInfo(Ring[i][3], MODE_ASK);
-
-			swapindi = swap[i][2] + swap[i][3] + swap[i][5] * _price[2];
-		}
-
-		if(swapindi > t)
-		{
-			if(EnableTrade==true)
-				openRing(d, i, _price, swapindi, Ring, MagicNumber, BaseLots, LotsDigit);
-
-			commstr = commstr + "[" + d + "]" + Ring[i][1] + "_" + Ring[i][2] + "_" + Ring[i][3] + " " + swapindi + "\n";
-
-			commstr = commstr + i + "-> " + Ring[i][1] + "[L]" + swap[i][1] + "[S]" + swap[i][2];
-			commstr = commstr + "  " + Ring[i][2] + "[L]" + swap[i][3] + "[S]" + swap[i][4];
-			commstr = commstr + "  " + Ring[i][3] + "[L]" + swap[i][5] + "[S]" + swap[i][6];
-			commstr = commstr + "\n";
-		}
+		checkmargin =  freemargin - AccountFreeMarginCheck(Ring[RingIdx][1], 0, lots);
+		checkmargin += freemargin - AccountFreeMarginCheck(Ring[RingIdx][2], 1, lots);
+		checkmargin += freemargin - AccountFreeMarginCheck(Ring[RingIdx][3], 1, clots);
 	}
+
+	//-- 
+	commstr = "[" + Ring[RingIdx][1] + "]" + "[" + Ring[RingIdx][2] + "]" + "[" + Ring[RingIdx][3] + "]\n"
+			+ "MarginBudget: " + MarginBudget + "\n"
+			+ "Calculate Margin: " + checkmargin + "\n"
+			+ "Calculate Lots: " + lots + "\n"
+			+ "Calculate C Lots: " + clots + "\n"
+			;
 	Comment(commstr);
 
-	return(0);
+	//-- open Ring 
+	double _price[4];
+	_price[1] = MarketInfo(Ring[RingIdx][1], MODE_ASK);
+	_price[2] = MarketInfo(Ring[RingIdx][2], MODE_BID);
+	_price[3] = MarketInfo(Ring[RingIdx][3], MODE_BID);
+
+	if(EnableTrade == true)
+		openRing(0, RingIdx, _price, CommentID, Ring, MagicNumber, lots, 2);
 }
