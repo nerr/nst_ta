@@ -40,10 +40,10 @@ int start()
         lSwap[0] = MarketInfo(SYMBOL, MODE_SWAPLONG);
                 
         if(sSwap[0] != sSwap[1] && sSwap[1] != 0)
-            sendAlert(SYMBOL + " Short Swap Changed. Current is " + sSwap[0] + " and prev is " + sSwap[1] + ".", 
+            sendAlert(SYMBOL + " Short Swap Changed. Current is " + DoubleToStr(sSwap[0], 2) + " and prev is " + DoubleToStr(sSwap[1], 2) + ".", 
                     "Notification");
         if(lSwap[0] != lSwap[1] && lSwap[1] != 0)
-            sendAlert(SYMBOL + " Leon Swap Changed. Current is " + lSwap[0] + " and prev is " + lSwap[1] + ".",  
+            sendAlert(SYMBOL + " Leon Swap Changed. Current is " + DoubleToStr(lSwap[0], 2) + " and prev is " + DoubleToStr(lSwap[1], 2) + ".",  
                     "Notification");
     }
     
