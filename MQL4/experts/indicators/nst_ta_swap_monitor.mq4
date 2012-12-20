@@ -1,6 +1,9 @@
 #property copyright "Copyright ? 2012 Nerrsoft.com"
 #property link      "http://nerrsoft.com"
 
+
+#include <nst_ta_public.mqh>
+
 #property indicator_separate_window
 #property indicator_buffers 2
 #property indicator_color1 Red
@@ -35,7 +38,16 @@ int start()
     {
         sSwap[0] = MarketInfo(SYMBOL, MODE_SWAPSHORT);
         lSwap[0] = MarketInfo(SYMBOL, MODE_SWAPLONG);
+                
+        if(sSwap[0] != sSwap[1] && sSwap[1] != 0)
+            sendAlert(SYMBOL + " Short Swap Changed. Current is " + sSwap[0] + " and prev is " + sSwap[1] + ".", 
+                    "Notification");
+        if(lSwap[0] != lSwap[1] && lSwap[1] != 0)
+            sendAlert(SYMBOL + " Leon Swap Changed. Current is " + lSwap[0] + " and prev is " + lSwap[1] + ".",  
+                    "Notification");
     }
+    
+    
     return(0);
 }
 

@@ -15,13 +15,22 @@ void outputLog(string _logtext, string _type="Information")
 	Print(text);
 }
 
+//-- send notification
+void sendNotifi(string _logtext, string _type="Information")
+{
+	string text = ">>>" + _type + ":" + _logtext;
+	SendNotification(text);
+}
+
 //-- send alert
 void sendAlert(string _text = "null", string _type="Information")
 {
 	outputLog(_text, _type);
+	sendNotifi(_text, _type);
 	PlaySound("alert.wav");
 	Alert(_text);
 }
+
 
 //-- desc error code to string
 string errorDescription(int _error)
