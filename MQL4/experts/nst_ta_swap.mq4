@@ -42,6 +42,9 @@ string db_table    = "dayinfo";
 
 double FPI[2, 7];
 int RingNum = 2;
+int orderTableX[6] = {25, 100, 200, 300, 400, 500};
+
+string SymbolArr[5] = {"USDJPY", "USDMXN", "MXNJPY", "EURJPY", "EURMXN"};
 
 
 
@@ -80,6 +83,7 @@ int start()
 	updateFpiInfo(FPI);
 	updateAccountInfo();
 	updateSwapInfo(Ring);
+	updateOrderInfo(MagicNumber);
     return(0);
 }
 
@@ -154,12 +158,97 @@ void initDebugInfo(string _ring[][])
     y += 15 * 3;
     createTextObj("order_header", 25, y, ">>> Order Summary", titlecolor);
     string orderTableName[6] = {"Symbol", "Size(Lot)", "Profit/Loss", "Commission", "Swap", "Total"};
-    int orderTableX[6] = {25, 100, 200, 300, 400, 500};
+    
     y += 15;
     for(i = 0; i < 6; i++)
     {
     	createTextObj("order_header_col_" + i, orderTableX[i], y, orderTableName[i]);
     }
+}
+
+void updateOrderInfo(int _mn)
+{
+	string prefix = "order_body_row_";
+	int j, i, y = 255;
+	double oinfo[5][5]; //--size; profit; commission; swap; total;
+	double sum[5];
+
+	
+
+
+	for(i = 0; i < 6; i ++)
+	{
+		for(j = 0; j < 6; j ++)
+		{
+			if(ObjectType(prefix + i + "_col_" + j) > 0)
+				ObjectDelete(prefix + i + "_col_" + j);
+
+			oinfo[i][j] = 0;
+		}
+
+		if(ObjectType("order_summary_col_" + i) > 0)
+			ObjectDelete("order_summary_col_" + i);
+	}
+
+	
+	int idx;
+	for(i = 0; i < OrdersTotal(); i++)
+	{
+		if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+		{
+			if(OrderMagicNumber() == _mn)
+			{
+				idx = checkSymbolIdx(OrderSymbol());
+
+				oinfo[idx][0] += OrderLots();
+				oinfo[idx][1] += OrderProfit();
+				oinfo[idx][2] += OrderCommission();
+				oinfo[idx][3] += OrderSwap();
+
+				oinfo[idx][4] += oinfo[idx][1] + oinfo[idx][2] + oinfo[idx][3];
+			}
+		}
+	}
+   	
+	for(i = 0; i < 6; i ++)
+	{
+		if(oinfo[i][0] > 0)
+		{
+			y += 15;
+			createTextObj(prefix + i + "_col_0", orderTableX[0], y, SymbolArr[i], White);
+			for(j = 1; j < 6; j ++)
+			{
+				createTextObj(prefix + i + "_col_" + j, orderTableX[j], y, DoubleToStr(oinfo[i][j-1], 2), White);
+				sum[j-1] += oinfo[i][j-1];
+			}
+		}
+	}
+
+	if(y > 255)
+	{
+		y += 15;
+		createTextObj("order_summary_col_0", 25, y, "Summary", C'0xd9,0x26,0x59');
+
+		for(i = 0; i < 5; i++)
+		{
+			if(sum[i] > 0)
+				createTextObj("order_summary_col_"+(i+1), orderTableX[i+1],y, DoubleToStr(sum[i], 2), DeepSkyBlue);
+			else
+				createTextObj("order_summary_col_"+(i+1), orderTableX[i+1],y, DoubleToStr(sum[i], 2), LightSeaGreen);
+		}
+	}
+
+	ArrayInitialize(sum, 0);
+}
+
+int checkSymbolIdx(string _sym)
+{
+	for(int i = 0; i < 6; i ++)
+	{
+		if(_sym == SymbolArr[i])
+			return(i);
+	}
+	return(10);
 }
 
 void updateSwapInfo(string &_ring[][3])
