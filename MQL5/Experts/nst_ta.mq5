@@ -396,13 +396,13 @@ bool O_openRing(int _direction, int _index, double &_price[], double _fpi, strin
     }
 
     //-- open order b
-    statuscode[1] = O_openOrder(_ring[_index][1], 0, _direction, _lots, _price[1], _magicnumber, IntegerToString(_index) + "#2" + commentText);
+    statuscode[1] = O_openOrder(_ring[_index][1], 0, b_c_direction, _lots, _price[1], _magicnumber, IntegerToString(_index) + "#2" + commentText);
     if(statuscode[1] == 10015)
     {
         if(b_c_direction==0 && SymbolInfoDouble(_ring[_index][1], SYMBOL_ASK) < _price[1])
-            statuscode[1] = O_openOrder(_ring[_index][1], 0, _direction, _lots, SymbolInfoDouble(_ring[_index][1], SYMBOL_ASK), _magicnumber, IntegerToString(_index) + "#2" + commentText);
+            statuscode[1] = O_openOrder(_ring[_index][1], 0, b_c_direction, _lots, SymbolInfoDouble(_ring[_index][1], SYMBOL_ASK), _magicnumber, IntegerToString(_index) + "#2" + commentText);
         else if(b_c_direction==1 && SymbolInfoDouble(_ring[_index][1], SYMBOL_BID) > _price[1])
-            statuscode[1] = O_openOrder(_ring[_index][1], 0, _direction, _lots, SymbolInfoDouble(_ring[_index][1], SYMBOL_BID), _magicnumber, IntegerToString(_index) + "#2" + commentText);
+            statuscode[1] = O_openOrder(_ring[_index][1], 0, b_c_direction, _lots, SymbolInfoDouble(_ring[_index][1], SYMBOL_BID), _magicnumber, IntegerToString(_index) + "#2" + commentText);
     }
     if(statuscode[1] == 10009)
         N_outputLog("nst_ta - Second order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "]", "Trading info");
@@ -421,13 +421,13 @@ bool O_openRing(int _direction, int _index, double &_price[], double _fpi, strin
 
     
     //-- open order c
-    statuscode[2] = O_openOrder(_ring[_index][2], 0, _direction, c_lots, _price[2], _magicnumber, IntegerToString(_index) + "#3" + commentText);
+    statuscode[2] = O_openOrder(_ring[_index][2], 0, b_c_direction, c_lots, _price[2], _magicnumber, IntegerToString(_index) + "#3" + commentText);
     if(statuscode[2] == 10015)
     {
         if(b_c_direction==0 && SymbolInfoDouble(_ring[_index][2], SYMBOL_ASK) < _price[2])
-            statuscode[2] = O_openOrder(_ring[_index][2], 0, _direction, c_lots, SymbolInfoDouble(_ring[_index][2], SYMBOL_ASK), _magicnumber, IntegerToString(_index) + "#3" + commentText);
+            statuscode[2] = O_openOrder(_ring[_index][2], 0, b_c_direction, c_lots, SymbolInfoDouble(_ring[_index][2], SYMBOL_ASK), _magicnumber, IntegerToString(_index) + "#3" + commentText);
         else if(b_c_direction==1 && SymbolInfoDouble(_ring[_index][2], SYMBOL_BID) > _price[2])
-            statuscode[2] = O_openOrder(_ring[_index][2], 0, _direction, c_lots, SymbolInfoDouble(_ring[_index][2], SYMBOL_BID), _magicnumber, IntegerToString(_index) + "#3" + commentText);
+            statuscode[2] = O_openOrder(_ring[_index][2], 0, b_c_direction, c_lots, SymbolInfoDouble(_ring[_index][2], SYMBOL_BID), _magicnumber, IntegerToString(_index) + "#3" + commentText);
     }
     if(statuscode[2] == 10009)
         N_outputLog("nst_ta - Third order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][2] + "]", "Trading info");
