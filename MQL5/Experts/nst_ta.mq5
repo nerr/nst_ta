@@ -85,6 +85,9 @@ int OnInit()
 
     //-- about mysql
     mysql.connect(DBHost, DBUser, DBPass, DBName);
+    
+    //-- load thold
+    DB_loadThold(DBTholdTable, FPI);
 
     return(0);
 }
@@ -93,6 +96,8 @@ void OnDeinit(const int reason)
 {
     //-- destroy timer
     EventKillTimer();
+
+    delete mysql;
 
 }
 
@@ -107,6 +112,9 @@ void OnTick()
 void OnTimer()
 {
     run();
+
+    if(TimeCurrent() % 100 == 0)
+        DB_loadThold(DBTholdTable, FPI);
 }
 
 /*
@@ -308,12 +316,6 @@ void R_getFPI(double &_fpi[][7], string &_ring[][3])
         if(_fpi[i][6]==0 || _fpi[i][3] - _fpi[i][1] > _fpi[i][6])
             _fpi[i][6] = _fpi[i][3] - _fpi[i][1];
 
-        //-- auto set fpi thold
-        if(_fpi[i][6] >= 0.001 && _fpi[i][4] == 0 && _fpi[i][5] == 0 && _fpi[i][1] != 0 && _fpi[i][3] != 0)
-        {
-            _fpi[i][4] = _fpi[i][1]; //-- 
-            _fpi[i][5] = _fpi[i][3]; //--
-        }
     }
 }
 
@@ -646,15 +648,13 @@ void D_updateFpiInfo(double &_fpi[][7])
         D_setTextObj(prefix + row + "_col_6", DoubleToString(_fpi[i][2], digit), DeepSkyBlue);
         D_setTextObj(prefix + row + "_col_7", DoubleToString(_fpi[i][3], digit));
         if(_fpi[i][4] > 0)
-        {
             D_setTextObj(prefix + row + "_col_8", DoubleToString(_fpi[i][4], digit), C'0xe6,0xdb,0x74');
-            D_setTextObj(prefix + row + "_col_9", DoubleToString(_fpi[i][5], digit), C'0xe6,0xdb,0x74');
-        }
         else
-        {
             D_setTextObj(prefix + row + "_col_8", DoubleToString(_fpi[i][4], digit));
+        if(_fpi[i][5] > 0)
+            D_setTextObj(prefix + row + "_col_9", DoubleToString(_fpi[i][5], digit), C'0xe6,0xdb,0x74');
+        else
             D_setTextObj(prefix + row + "_col_9", DoubleToString(_fpi[i][5], digit));
-        }
     }
 }
 
@@ -676,6 +676,28 @@ void DB_logFpi2DB(string _table, double &_fpi[][7])
         mysql.set("sthold", _fpi[i][2]);
         mysql.set("marketdate", marketdate);
         mysql.write();
+    }
+}
+
+void DB_loadThold(string _table, double &_fpi[][7])
+{
+    for(int j = 0; j < RingNum; j++)
+    {
+        _fpi[j][5] = 0;
+        _fpi[j][4] = 0;
+    }
+
+    int result = mysql.read_rows("SELECT * FROM " + DBTholdTable + " WHERE sthold>0 OR lthold>0");
+    for(int i = 0; i < result; i++)
+    {
+        double sthold = (double)mysql.get("sthold", i);
+        double lthold = (double)mysql.get("lthold", i);
+        int ringidx = (int)mysql.get("ringidx", i);
+
+        if(sthold > 0)
+            _fpi[ringidx][5] = sthold;
+        if(lthold > 0)
+            _fpi[ringidx][4] = lthold;
     }
 }
 
