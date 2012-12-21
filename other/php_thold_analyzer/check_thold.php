@@ -15,10 +15,9 @@ $db = new mysqli($db_host,$db_user,$db_psw,$db_name);
 echo "---short thold---\n";
 for($i = 0; $i < 47; $i++)
 {
-	$query = "SELECT (SUM(sthold) - MAX(sthold) - MIN(sthold))/(COUNT(*)-2) as _avg,MAX(sthold) as _max
+	$query = "SELECT (SUM(sthold) - MAX(sthold) - MIN(sthold))/(COUNT(*)-2) as _avg 
 			FROM $tb_log
-			WHERE ringidx=$i AND sthold>0 
-			HAVING (_max - _avg)>0.0005";
+			WHERE ringidx=$i AND sthold>0";
 
 	$result = $db->query($query);
 
@@ -28,8 +27,9 @@ for($i = 0; $i < 47; $i++)
 		{
 			$row = $result->fetch_array(MYSQLI_ASSOC);
 
-			echo "$i -> avg: ".$row['_avg']." max: ".$row['_max']."\n";
 			$sthold = $row['_avg'] + 0.0005;
+			echo "$i -> avg: ".$row['_avg']." thold: ".$sthold."\n";
+			
 			udatethold($db, $tb_thold, "sthold", $sthold, $i);
 		}
 	}
@@ -39,10 +39,9 @@ for($i = 0; $i < 47; $i++)
 echo "---long thold---\n";
 for($i = 0; $i < 47; $i++)
 {
-	$query = "SELECT (SUM(lthold) - MAX(lthold) - MIN(lthold))/(COUNT(*)-2) as _avg,MIN(lthold) as _min
+	$query = "SELECT (SUM(lthold) - MAX(lthold) - MIN(lthold))/(COUNT(*)-2) as _avg 
 			FROM $tb_log
-			WHERE ringidx=$i AND lthold>0 
-			HAVING (_avg - _min)>0.0005";
+			WHERE ringidx=$i AND lthold>0";
 
 	$result = $db->query($query);
 
@@ -52,8 +51,9 @@ for($i = 0; $i < 47; $i++)
 		{
 			$row = $result->fetch_array(MYSQLI_ASSOC);
 
-			echo "$i -> avg: ".$row['_avg']." min: ".$row['_min']."\n";
 			$lthold = $row['_avg'] - 0.0005;
+			echo "$i -> avg: ".$row['_avg']." thold: ".$lthold."\n";
+			
 			udatethold($db, $tb_thold, "lthold", $lthold, $i);
 		}
 	}
