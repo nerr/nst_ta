@@ -701,6 +701,11 @@ void DB_loadThold(string _table, double &_fpi[][7])
     }
 }
 
+void DB_createTable(string _tholdtablename, string _logTableName)
+{
+    
+}
+
 
 /*
  * Notification Functions
