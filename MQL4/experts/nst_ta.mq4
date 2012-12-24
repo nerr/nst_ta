@@ -1,70 +1,3 @@
-/* Nerr Smart Trader - Triangular Arbitrage Trading System
- *
- * By Leon Zhuang
- * Twitter @Nerrsoft
- * leon@nerrsoft.com
- * http://nerrsoft.com
- *  
- * @History
- * v0.0.2  [dev] 2012-05-01 add information on display chart. 
- * v0.0.3  [dev] 2012-05-03 recode information display format, fix some typo. 
- * v0.0.4  [dev] 2012-05-04 now can set the symbol team by user; add comment for program; slim code.
- * v0.0.5  [dev] 2012-05-14 re-calcu fpi and three symbol price (current).
- * v0.0.6  [dev] 2012-05-15 re-calcu order lot, base pair and hedge paris.
- * v0.0.7  [dev] 2012-05-18 display has order or not. display a ring trade high profit to low profit
- * v0.0.8  [dev] 2012-05-22 change openorder() and closeorder() fun name to openRing() and closeRing(), remove close fun's parama, and recode open and close ring fun.
- * v0.0.9  [dev] 2012-05-22 update openRing() fun.
- * v0.0.10 [dev] 2012-05-22 add three symbol spread summary check (), change comment text.
- * v0.0.11 [dev] 2012-05-23 add extern ver "MaxSpread" use to some special ring; remove "ProfitMargin".
- * v0.0.12 [dev] 2012-05-24 fix checkProfit() magic number bug, fix display bug, remove openRing() sleep.
- * v0.0.13 [dev] 2012-05-28 add open sell order when sellFPI to thold value.
- * v0.0.14 [dev] 2012-05-28 add play sound notification when open or close order.
- * v0.0.15 [dev] 2012-05-29 fix close bug.
- * v0.0.16 [dev] 2012-05-29 split ta fun with TAOpen() and TAClose().
- * v0.0.17 [dev] 2012-05-29 fix checkProfit() bug; add real ring FPI var.
- * v0.0.18 [dev] 2012-05-30 add margin level check.fix margin level cal bug.
- * v0.1.0  [dev] 2012-11-19 new begin;
- * v0.1.1  [dev] 2012-11-20 finished calcu fpi indicator and show it on chart;
- * v0.1.2  [dev] 2012-11-20 finished new openRing() func, if price change than open limit order;
- * v0.1.3  [dev] 2012-11-20 finished the open order and check trade chance, no grammar error but not test yet;
- * v0.1.4  [dev] 2012-11-21 fix a trade thold bug, add "get price without stop";
- * v0.1.5  [dev] 2012-11-21 add settings information to chart;
- * v0.1.6  [dev] 2012-11-21 add extern item "LotsDigit" default value is 2, but some account allow 1 digit only; fix third order log output text;
- * v0.1.7  [dev] 2012-11-21 change debug object style;
- * v0.1.8  [dev] 2012-11-21 add updateSettingInfo() func;
- * v0.1.9  [dev] 2012-11-22 add checkUnavailableSymbol() func use to self-adaption current support symbol; add 6 new ring;
- * v0.1.10 [dev] 2012-11-22 finished auto get all ring of current broker;
- * v0.1.11 [dev] 2012-11-22 add extern item "Currencies" use to custum currency whitch user want it;
- * v0.1.12 [dev] 2012-11-22 fix ring table header real ring number;
- * v0.1.13 [dev] 2012-11-22 add col name "sH-bL" in ring table;
- * v0.1.14 [dev] 2012-11-23 add errorDescription() func use to desc error code; add background;
- * v0.1.15 [dev] 2012-11-25 change extern Currencies default value;
- * v0.1.16 [dev] 2012-11-25 remove the while() int start() func; change order comment info format add symbol number behind ring index;
- * v0.1.17 [dev] 2012-11-25 add ringHaveOrder() func use to check a ring have order or not; add updateRingInfo() func; finished checkCurrentOrder() func;
- * v0.1.18 [dev] 2012-11-26 debug func updateRingInfo() and checkCurrentOrder() bug; change default extern Magicnumber value;
- * v0.1.19 [dev] 2012-11-26 fix some typo bug; ring info part can runable but not complete;
- * v0.1.20 [dev] 2012-11-26 finished auto get thold value and remove extern about thold item;
- * v0.1.21 [dev] 2012-11-28 fix special symbol name bug;
- * v0.1.22 [dev] 2012-11-29 fix a small bug but it deadly, revised ringHaveOrder() first param;
- * v0.1.23 [dev] 2012-11-29 simplify code and change extern item "Currencies" default value;
- * v0.1.24 [dev] 2012-11-29 add remove all object item in initDebugInfo() func;
- * v0.1.25 [dev] 2012-11-29 mv order management funcs to nst_ta_public.mq4;
- * v0.1.26 [dev] 2012-12-03 restructure "initDubugChart()" func;
- * v0.1.27 [dev] 2012-12-03 merge mq4 file nst_ta and nst_ta_om; remove nst_ta_om.mq4 file;
- * v0.1.28 [dev] 2012-12-04 adjuse the coordinate of display object;
- * v0.1.29 [dev] 2012-12-04 fix close order OrderSeclec() param error;
- * v0.1.30 [dev] 2012-12-04 adjuse the order display total item when display; remove RUB from default extern "Currencies";
- * v0.1.31 [dev] 2012-12-06 remove extern item Baselots, change to auto calcu use marketinfo(); change order status fpi with diff fpi value;
- * v0.1.32 [dev] 2012-12-06 adjuse the coordinate of display object; change thold calu value from 0.0005 to 0.001; change thold value display color;
- * v0.1.33 [dev] 2012-12-07 fix CloseRing() func select order bug (may be mt4 bug...);
- * v0.1.34 [dev] 2012-12-07 add repairRing() func use to repair problem ring;
- * v0.1.35 [dev] 2012-12-07 add delete limit order in closeRing() func;
- *
- * @Todo
- */
-
-
-
 #property copyright "Copyright ? 2012 Nerrsoft.com"
 #property link      "http://nerrsoft.com"
 
@@ -174,6 +107,8 @@ int init()
 //-- deinit
 int deinit()
 {
+	mysqlDeinit(dbConnectId);
+
 	return(0);
 }
 
