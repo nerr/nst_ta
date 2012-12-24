@@ -30,11 +30,11 @@ extern string 	BrokerSetting 	= "---------Broker Setting--------";
 extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|LTL|LVL|HUF|HRK|CCK|RON|";
 								//"EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|RON|XAU|XAG|"
 extern string 	DBSetting 		= "---------MySQL Setting---------";
+extern bool 	LogFpiToDB		= true;
 extern string 	host			= "127.0.0.1";
 extern string 	user			= "root";
 extern string 	pass			= "911911";
 extern string 	dbName			= "metatrader";
-extern string 	pricetable		= "";
 extern int 		port			= 3306;
 
 
@@ -72,7 +72,6 @@ int init()
 	fpitable = fpitable + AccountNumber();
 	tholdtable = tholdtable + AccountNumber();
 	DB_createTables(dbConnectId, fpitable, tholdtable);
-
 
 	//-- get LotsDigit
 	if(MarketInfo(Symbol(), MODE_LOTSTEP) < 0.1)
@@ -125,7 +124,8 @@ int start()
 
 	updateRingInfo(ROTicket, ROProfit);
 
-	DB_logFpi2DB(dbConnectId, fpitable, FPI);
+	if(LogFpiToDB == true)
+		DB_logFpi2DB(dbConnectId, fpitable, FPI);
 
 	if(TimeCurrent() % 100 == 0)
 		DB_loadThold(dbConnectId, tholdtable, FPI);
