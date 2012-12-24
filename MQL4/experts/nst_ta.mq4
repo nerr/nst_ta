@@ -7,12 +7,12 @@
 #include <nst_ta_public.mqh>
 //-- include mysql wrapper
 #include <mysql.mqh>
-int     socket         = 0;
-int     client         = 0;
+int     socket      = 0;
+int     client      = 0;
 int     dbConnectId = 0;
 bool    goodConnect = false;
-string  fpitable     = "nst_ta_fpi_";
-string  tholdtable     = "nst_ta_thold_";
+string  fpitable    = "nst_ta_fpi_";
+string  tholdtable  = "nst_ta_thold_";
 
 
 
@@ -21,21 +21,21 @@ string  tholdtable     = "nst_ta_thold_";
  *
  */
 
-extern string     TradeSetting     = "---------Trade Setting--------";
+extern string   TradeSetting    = "---------Trade Setting--------";
 extern bool     EnableTrade     = true;
-extern bool     Superaddition    = false;
-extern double     BaseLots        = 0.5;
-extern int         MagicNumber     = 99901;
-extern string     BrokerSetting     = "---------Broker Setting--------";
-extern string     Currencies        = "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|LTL|LVL|HUF|HRK|CCK|RON|";
-                                //"EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|RON|XAU|XAG|"
-extern string     DBSetting         = "---------MySQL Setting---------";
-extern bool     LogFpiToDB        = false;
-extern string     host            = "127.0.0.1";
-extern string     user            = "root";
-extern string     pass            = "911911";
-extern string     dbName            = "metatrader";
-extern int         port            = 3306;
+extern bool     Superaddition   = false;
+extern double   BaseLots        = 0.5;
+extern int      MagicNumber     = 99901;
+extern double   SafeMargin      = 0.15;
+extern string   BrokerSetting   = "---------Broker Setting--------";
+extern string   Currencies      = "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|LTL|LVL|HUF|HRK|CCK|RON|";
+extern string   DBSetting       = "---------MySQL Setting---------";
+extern bool     LogFpiToDB      = true;
+extern string   host            = "127.0.0.1";
+extern string   user            = "root";
+extern string   pass            = "911911";
+extern string   dbName          = "metatrader";
+extern int      port            = 3306;
 
 
 
@@ -47,7 +47,7 @@ extern int         port            = 3306;
 string Ring[200, 4], SymExt;
 double FPI[1, 8], RingOrd[1, 10], Thold[1, 2], RingM[1, 4];
 int    ringnum;
-int    orderTableHeaderX[10]    = {760, 790, 855, 920, 985, 1060, 1130, 1200, 1270, 1330};
+int    orderTableHeaderX[10] = {760, 790, 855, 920, 985, 1060, 1130, 1200, 1270, 1330};
 int    ROTicket[100, 5]; //-- ringindex， a, b, c, direction
 double ROProfit[100, 6]; //-- total, a, b, c, target, ringfpi
 double LotsDigit;
@@ -153,7 +153,7 @@ void getFPI(double &_fpi[][])
         //-- buy fpi
         _fpi[i][1] = _price[1] / (_price[2] * _price[3]);
         //-- check buy chance
-        if(_fpi[i][1] <= _fpi[i][5] && EnableTrade == true && (ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
+        if(_fpi[i][1] <= _fpi[i][5] && checkSafeMargin(SafeMargin) == true && EnableTrade == true && (ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
         {
             openRing(0, i, _price, _fpi[i][1], Ring, MagicNumber, BaseLots, LotsDigit);
         }
@@ -167,7 +167,7 @@ void getFPI(double &_fpi[][])
         //-- sell fpi
         _fpi[i][3] = _price[1] / (_price[2] * _price[3]);
         //-- check sell chance
-        if(_fpi[i][6] > 0 && _fpi[i][3] >= _fpi[i][6] && EnableTrade == true && (ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
+        if(_fpi[i][6] > 0 && _fpi[i][3] >= _fpi[i][6] && checkSafeMargin(SafeMargin) == true && EnableTrade == true && (ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
         {
             openRing(1, i, _price, _fpi[i][3], Ring, MagicNumber, BaseLots, LotsDigit);
         }
@@ -424,6 +424,16 @@ void repairRing(int _roticket[][], int _ringindex)
     }
 }
 
+bool checkSafeMargin(double _smr)
+{
+    if(AccountMargin() == 0)
+        return(true);
+    else if(AccountMargin() > AccountFreeMargin() * _smr)
+        return(true);
+    else
+        return(false);
+}
+
 
 
 /* 
@@ -436,19 +446,11 @@ void initDebugInfo(string _ring[][])
 {
     ObjectsDeleteAll();
 
-    color bgcolor = C'0x27,0x28,0x22';
     color titlecolor = C'0xd9,0x26,0x59';
     int y, i, j;
 
-    //-- background
-    for(int bgnum = 0; bgnum < 16; bgnum++)
-    {
-        ObjectCreate("bg_"+bgnum, OBJ_LABEL, 0, 0, 0);
-        ObjectSetText("bg_"+bgnum, "g", 300, "Webdings", bgcolor);
-        ObjectSet("bg_"+bgnum, OBJPROP_BACK, false);
-        ObjectSet("bg_"+bgnum, OBJPROP_XDISTANCE, 20 + bgnum % 4 * 400);
-        ObjectSet("bg_"+bgnum, OBJPROP_YDISTANCE, 13 + bgnum / 4 * 387);
-    }
+    //-- set background
+    createTextObj("_background", 15, 15, "g", C'0x27,0x28,0x22', "Webdings", 1400);
 
     //-- left side
     //-- broker price table header
@@ -474,7 +476,6 @@ void initDebugInfo(string _ring[][])
         for(j = 5; j < 11; j++)
             createTextObj("price_body_row_" + i + "_col_" + j, priceTableHeaderX[j], y);
     }
-
 
     //-- right side
     //-- settings info
