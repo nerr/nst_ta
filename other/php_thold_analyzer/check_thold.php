@@ -1,23 +1,47 @@
 <?php
+$account  = $argv[1];
+$mqlver = $argv[2]; // -- 4 or 5
 
 $db_host = "localhost";
 $db_user = "root";
 $db_psw  = "911911";
 $db_name = "metatrader";
 
-//$tholdtable;
-$tb_log = "nst_ta_log_alpariuk833";
-$tb_thold = "nst_ta_thold_alpariuk833";
+$tb_fpi = "nst_ta_fpi_".$account;
+$tb_thold = "nst_ta_thold_".$account;
 
-$db = new mysqli($db_host,$db_user,$db_psw,$db_name); 
+$db = new mysqli($db_host, $db_user, $db_psw, $db_name);
 
 
-echo "---short thold---\n";
-for($i = 0; $i < 47; $i++)
+//--
+$begin = 0;
+$result = $db->query("SELECT MAX(ringidx) as _max FROM $tb_fpi limit 200");
+if($result)
 {
-	$query = "SELECT (SUM(sthold) - MAX(sthold) - MIN(sthold))/(COUNT(*)-2) as _avg 
-			FROM $tb_log
-			WHERE ringidx=$i AND sthold>0";
+	$result->data_seek(1);
+	$row = $result->fetch_array(MYSQLI_ASSOC);
+	$end = $row['_max'];
+}
+
+if($mqlver!=5)
+{
+	$begin++;
+	$end++;
+}
+
+echo $tb_fpi."\n";
+echo $end."\n";
+
+
+//--
+echo "---short thold---\n";
+for($i = $begin; $i < $end; $i++)
+{
+	$db->query("INSERT IGNORE INTO $tb_thold (`ringidx`) VALUES ($i)");
+
+	$query = "SELECT (SUM(sfpi) - MAX(sfpi) - MIN(sfpi))/(COUNT(*)-2) as _avg 
+			FROM $tb_fpi
+			WHERE ringidx=$i AND sfpi>0";
 
 	$result = $db->query($query);
 
@@ -37,11 +61,11 @@ for($i = 0; $i < 47; $i++)
 
 
 echo "---long thold---\n";
-for($i = 0; $i < 47; $i++)
+for($i = $begin; $i < $end; $i++)
 {
-	$query = "SELECT (SUM(lthold) - MAX(lthold) - MIN(lthold))/(COUNT(*)-2) as _avg 
-			FROM $tb_log
-			WHERE ringidx=$i AND lthold>0";
+	$query = "SELECT (SUM(lfpi) - MAX(lfpi) - MIN(lfpi))/(COUNT(*)-2) as _avg 
+			FROM $tb_fpi
+			WHERE ringidx=$i AND lfpi>0";
 
 	$result = $db->query($query);
 
