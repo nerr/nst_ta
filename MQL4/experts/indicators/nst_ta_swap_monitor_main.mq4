@@ -98,7 +98,7 @@ void initDebugInfo(string _ring[][])
     int ringnum = ArrayRange(_ring, 0);
 
     //-- set background
-    createTextObj("_background", 15, 15, "g", C'0x27,0x28,0x22', "Webdings", 600);
+    createTextObj("_background", 15, 15, "g", C'0x27,0x28,0x22', "Webdings", 800);
 
     //-- set fpi table
     y += 15;
@@ -172,9 +172,6 @@ void updateOrderInfo(int _mn)
     int j, i, y = 255;
     double oinfo[5][5]; //--size; profit; commission; swap; total;
     double sum[5];
-
-    
-
 
     for(i = 0; i < 6; i ++)
     {
