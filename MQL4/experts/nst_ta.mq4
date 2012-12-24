@@ -164,6 +164,10 @@ int init()
 
 	//-- initDebugInfo
 	initDebugInfo(Ring);
+
+	//--
+	DB_loadThold(dbConnectId, tholdtable, FPI);
+
 	return(0);
 }
 
@@ -677,7 +681,8 @@ void DB_createTables(int _dbconnid, string _logt, string _tholdt)
 		"CREATE TABLE IF NOT EXISTS `" + _tholdt + "` (",
 		"`ringidx`  tinyint(4) NULL DEFAULT NULL ,",
 		"`lthold`  float(8,7) NULL DEFAULT NULL ,",
-		"`sthold`  float(8,7) NULL DEFAULT NULL ",
+		"`sthold`  float(8,7) NULL DEFAULT NULL ,",
+		"PRIMARY KEY (`ringidx`)",
 		")",
 		"ENGINE=MyISAM ",
 		"DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci ",
