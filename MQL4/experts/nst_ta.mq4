@@ -70,8 +70,16 @@
 
 
 
-//--
+//-- include public funcs
 #include <nst_ta_public.mqh>
+//-- include mysql wrapper
+#include <mysql.mqh>
+int		socket 		= 0;
+int		client 		= 0;
+int		dbConnectId = 0;
+bool	goodConnect = false;
+string 	fpitable 	= "nst_ta_fpi_";
+string 	tholdtable 	= "nst_ta_thold_";
 
 
 
@@ -88,6 +96,13 @@ extern int 		MagicNumber 	= 99901;
 extern string 	BrokerSetting 	= "---------Broker Setting--------";
 extern string 	Currencies		= "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|LTL|LVL|HUF|HRK|CCK|RON|";
 								//"EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|RUB|LTL|LVL|HUF|HRK|CCK|RON|XAU|XAG|"
+extern string 	DBSetting 		= "---------MySQL Setting---------";
+extern string 	host			= "127.0.0.1";
+extern string 	user			= "root";
+extern string 	pass			= "911911";
+extern string 	dbName			= "metatrader";
+extern string 	pricetable		= "";
+extern int 		port			= 3306;
 
 
 
@@ -114,6 +129,19 @@ double LotsDigit;
 //-- init
 int init()
 {
+	//-- connect mysql
+	goodConnect = DB_connectdb();
+	if(!goodConnect)
+	{
+		outputLog("connect db failed", "Error");
+		return (1);
+	}
+	fpitable = fpitable + AccountNumber();
+	tholdtable = tholdtable + AccountNumber();
+	DB_createTables(dbConnectId, fpitable, tholdtable);
+
+
+	//-- get LotsDigit
 	if(MarketInfo(Symbol(), MODE_LOTSTEP) < 0.1)
 		LotsDigit = 2;
 	else if(MarketInfo(Symbol(), MODE_LOTSTEP) < 1)
@@ -157,6 +185,11 @@ int start()
 	checkCurrentOrder(MagicNumber, ROTicket, ROProfit);
 
 	updateRingInfo(ROTicket, ROProfit);
+
+	DB_logFpi2DB(dbConnectId, fpitable, FPI);
+
+	if(TimeCurrent() % 100 == 0)
+		DB_loadThold(dbConnectId, tholdtable, FPI);
 
 	return(0);
 }
@@ -209,12 +242,12 @@ void getFPI(double &_fpi[][])
 		if(_fpi[i][7]==0 || _fpi[i][4] - _fpi[i][2] > _fpi[i][7])
 			_fpi[i][7] = _fpi[i][4] - _fpi[i][2];
 
-		//-- auto set fpi thold
+		/*//-- auto set fpi thold
 		if(_fpi[i][7] >= 0.001 && _fpi[i][5] == 0 && _fpi[i][6] == 0)
 		{
 			_fpi[i][5] = _fpi[i][2]; //-- 
 			_fpi[i][6] = _fpi[i][4]; //--
-		}
+		}*/
 	}
 }
 
@@ -600,4 +633,93 @@ void updateRingInfo(int _roticket[][], double _roprofit[][])
 		createTextObj("order_body_row_" + i + "_col_0", orderTableHeaderX[0],y, "Total");
 		createTextObj("order_body_row_" + i + "_col_7", orderTableHeaderX[7],y, DoubleToStr(total, 2), Crimson);
 	}
+}
+
+
+/* 
+ * MySQL Funcs
+ *
+ */
+
+//-- connect to database
+int DB_connectdb()
+{
+	//-- close connection if exists
+	if(dbConnectId>0)
+		mysqlDeinit(dbConnectId);
+
+	//-- connect mysql
+	bool result = mysqlInit(dbConnectId, host, user, pass, dbName, port, socket, client);
+
+	return (result);
+}
+
+//--
+void DB_createTables(int _dbconnid, string _logt, string _tholdt)
+{
+	string query = StringConcatenate(
+		"CREATE TABLE IF NOT EXISTS `" + _logt + "` (",
+		"`ringidx`  tinyint(4) NULL DEFAULT NULL ,",
+		"`lfpi`  float(8,7) NULL DEFAULT NULL ,",
+		"`sfpi`  float(8,7) NULL DEFAULT NULL ,",
+		"`marketdate`  datetime NULL DEFAULT NULL ",
+		")",
+		"ENGINE=MyISAM ",
+		"DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci ",
+		"CHECKSUM=0 ",
+		"ROW_FORMAT=FIXED ",
+		"DELAY_KEY_WRITE=0"
+	);
+	mysqlQuery(_dbconnid, query);
+
+
+	query = StringConcatenate(
+		"CREATE TABLE IF NOT EXISTS `" + _tholdt + "` (",
+		"`ringidx`  tinyint(4) NULL DEFAULT NULL ,",
+		"`lthold`  float(8,7) NULL DEFAULT NULL ,",
+		"`sthold`  float(8,7) NULL DEFAULT NULL ",
+		")",
+		"ENGINE=MyISAM ",
+		"DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci ",
+		"CHECKSUM=0 ",
+		"ROW_FORMAT=FIXED ",
+		"DELAY_KEY_WRITE=0"
+	);
+	mysqlQuery(_dbconnid, query);
+}
+
+//-- 
+void DB_logFpi2DB(int _dbconnid, string _table, double _fpi[][8])
+{
+	string query = "INSERT INTO `" + _table + "` (ringidx, lfpi, sfpi, marketdate) VALUES ";
+	string marketdate = TimeToStr(TimeCurrent(), TIME_DATE|TIME_SECONDS);
+
+	for(int i = 1; i < ringnum; i++)
+	{
+		query = query + "(" + i + ", " + _fpi[i][1] + ", " + _fpi[i][3] + ", '" + marketdate + "'),";
+		
+	}
+	query = StringSubstr(query, 0, StringLen(query) - 1);
+	mysqlQuery(_dbconnid, query);
+}
+
+//-- 
+void DB_loadThold(int _dbconnid, string _table, double &_fpi[][8])
+{
+	string data[][3];
+	string query = "SELECT ringidx,lthold,sthold FROM `" + _table + "`";
+	int result = mysqlFetchArray(_dbconnid, query, data);
+
+	for(int i = 0; i < ArrayRange(data, 0); i++)
+	{
+		double sthold = StrToDouble(data[i][2]);
+		double lthold = StrToDouble(data[i][1]);
+		int    ringidx= StrToInteger(data[i][0]);
+
+		if(sthold > 0)
+			_fpi[ringidx][6] = sthold;
+		if(lthold > 0)
+			_fpi[ringidx][5] = lthold;
+	}
+
 }
