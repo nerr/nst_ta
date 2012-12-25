@@ -613,10 +613,10 @@ void DB_createTables(int _dbconnid, string _logt, string _tholdt)
 
     query = StringConcatenate(
         "CREATE TABLE IF NOT EXISTS `" + _tholdt + "` (",
-        "`ringidx`  tinyint(4) NULL DEFAULT NULL ,",
+        "`ringidx` tinyint(4) NULL DEFAULT NULL ,",
         "`lthold`  float(8,7) NULL DEFAULT NULL ,",
         "`sthold`  float(8,7) NULL DEFAULT NULL ,",
-        "PRIMARY KEY (`ringidx`)",
+        "UNIQUE INDEX `idx_ringidx` (`ringidx`) USING BTREE "
         ")",
         "ENGINE=MyISAM ",
         "DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci ",
