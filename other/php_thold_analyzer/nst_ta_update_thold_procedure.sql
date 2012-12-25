@@ -11,11 +11,11 @@ BEGIN
 	EXECUTE stmt1;
 	DEALLOCATE PREPARE stmt1;
 	SET @i = 0;
+	SET @maxringidx = @maxringidx + 1;
 
 	/*-- get max ring index*/
 	IF ver=4 THEN
 		SET @i = @i + 1;
-		SET @maxringidx = @maxringidx + 1;
 	END IF;
 	
 	/* */
@@ -32,8 +32,8 @@ BEGIN
 		EXECUTE stmt1;
 		DEALLOCATE PREPARE stmt1;
 		/* calculate thold value */
-		SET @lthold = @lavg - 0.0005;
-		SET @sthold = @savg + 0.0005;
+		SET @lthold = @lavg - 0.0006;
+		SET @sthold = @savg + 0.0006;
 		/* update new thold to db */
 		SET @sql = concat('UPDATE ',@tho_table,' SET lthold=@lthold,sthold=@sthold WHERE ringidx=@i');
 		PREPARE stmt1 FROM @sql;
@@ -47,10 +47,24 @@ END
 //
 DELIMITER ;
 
-/*
+/* call all procdeure */
+DROP PROCEDURE IF EXISTS `call_all_update_thold`;
+DELIMITER //
+CREATE PROCEDURE `call_all_update_thold`()
+BEGIN
+	CALL nst_ta_update_thold(833,4);
+	CALL nst_ta_update_thold(7070,4);
+	CALL nst_ta_update_thold(11072059,4);
+	CALL nst_ta_update_thold(20039706,5);
+END
+//
+DELIMITER ;
 
 
-DROP EVENT IF EXISTS new_thold_7070;
-CREATE EVENT IF NOT EXISTS new_thold_7070 
-ON SCHEDULE EVERY HOUR
-DO CALL nst_ta_update_thold(7070, 4);*/
+
+/* call event */
+DROP EVENT IF EXISTS nst_call_all;
+CREATE EVENT nst_call_all
+    ON SCHEDULE EVERY HOUR
+    DO
+      CALL call_all_update_thold();
