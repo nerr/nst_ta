@@ -11,7 +11,7 @@ It is a arbitrage trading system for Metatrader 4/5 base on Triangular Arbitrage
 
 * MQL5 - The trading system for Metatrader5 but not complete.
 
-* other - Report provider and MySQL script. Report provider code by PHP and it can run on CLI mode, so do not neet web server; MySQL script is a procedure use to make trading triger.
+* other - Report provider and MySQL script. Report provider code by PHP, it can auto generate excel report and it can run on CLI mode, so do not neet web server; MySQL script is a procedure use to make trading triger.
 
 - - -
 
