@@ -2,47 +2,24 @@
 
 Nerr Smart Trader - Triangular Arbitrage Trading System
 
-It is a arbitrage script for Metatrader 4 base on Triangular Arbitrage strategy. The script can find triangular arbitrage ring auto.
+It is a arbitrage trading system for Metatrader 4/5 base on Triangular Arbitrage strategy.
 
-## extern variable explain ##
-<table>
-	<tr>
-		<td>name</td>
-		<td>default</td>
-		<td>desc</td>
-	</tr>
-	<tr>
-		<td>EnableTrade</td>
-		<td>true</td>
-		<td>allow trade switch</td>
-	</tr>
-	<tr>
-		<td>Superaddition</td>
-		<td>false</td>
-		<td>the the value is true and the thold value is big enough superaddition a ring again</td>
-	</tr>
-	<tr>
-		<td>BaseLots</td>
-		<td>0.5</td>
-		<td>per order lots not the ring total lots</td>
-	</tr>
-	<tr>
-		<td>MagicNumber</td>
-		<td>99901</td>
-		<td>use to tag the order opened by this EA</td>
-	</tr>
-	<tr>
-		<td>LotsDigit</td>
-		<td>2</td>
-		<td>if your account allow min lots 0.1 only please set the value to 1, else do not change</td>
-	</tr>
-	<tr>
-		<td>Currencies</td>
-		<td>EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|</td>
-		<td>script will use these currencies to find triangular arbitrage ring</td>
-	</tr>
-</table>
 
+## Directories
+
+* MQL4 - The trading system for Metatrader4.
+
+* MQL5 - The trading system for Metatrader5 but not complete.
+
+* other - Report provider and MySQL script. Report provider code by PHP and it can run on CLI mode, so do not neet web server; MySQL script is a procedure use to make trading triger.
+
+- - -
+
+# Author
+
+My name is Leon, if you are interested in this project you can send email to me (leon#nerrsoft.com) or follow me on twitter (@nerrsoft).
+
+- - -
 
 # License
 
