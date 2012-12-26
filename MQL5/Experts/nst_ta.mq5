@@ -35,8 +35,6 @@ input string DBHost        = "127.0.0.1";
 input string DBUser        = "root";
 input string DBPass        = "911911";
 input string DBName        = "metatrader";
-input string DBLogTable    = "nst_ta_log_alpariuk833";
-input string DBTholdTable  = "nst_ta_thold_alpariuk833";
 
 
 
@@ -63,6 +61,9 @@ int     RingNum;
 double  FPI[][7];
 int     orderTableHeaderX[10] = {760, 790, 855, 920, 985, 1060, 1130, 1200, 1270, 1330};
 
+string  DBFpiTable    = "nst_ta_fpi_";
+string  DBTholdTable  = "nst_ta_thold_";
+
 
 
 /*
@@ -85,6 +86,11 @@ int OnInit()
 
     //-- about mysql
     mysql.connect(DBHost, DBUser, DBPass, DBName);
+
+    //-- create table
+    DBFpiTable = DBFpiTable + AccountInfoInteger(ACCOUNT_LOGIN);
+    DBTholdTable = DBTholdTable + AccountInfoInteger(ACCOUNT_LOGIN);
+    DB_createTable(DBTholdTable, DBFpiTable);
     
     //-- load thold
     DB_loadThold(DBTholdTable, FPI);
@@ -106,7 +112,7 @@ void OnTick()
     run();
     
     if(LogPriceToDB == true)
-        DB_logFpi2DB(DBLogTable, FPI);
+        DB_logFpi2DB(DBFpiTable, FPI);
 }
 
 void OnTimer()
@@ -672,8 +678,8 @@ void DB_logFpi2DB(string _table, double &_fpi[][7])
     {
         mysql.AddNew(_table);
         mysql.set("ringidx", i);
-        mysql.set("lthold", _fpi[i][0]);
-        mysql.set("sthold", _fpi[i][2]);
+        mysql.set("lfpi", _fpi[i][0]);
+        mysql.set("sfpi", _fpi[i][2]);
         mysql.set("marketdate", marketdate);
         mysql.write();
     }
@@ -687,7 +693,7 @@ void DB_loadThold(string _table, double &_fpi[][7])
         _fpi[j][4] = 0;
     }
 
-    int result = mysql.read_rows("SELECT * FROM " + DBTholdTable + " WHERE sthold>0 OR lthold>0");
+    int result = mysql.read_rows("SELECT * FROM " + _table + " WHERE sthold>0 OR lthold>0");
     for(int i = 0; i < result; i++)
     {
         double sthold = (double)mysql.get("sthold", i);
@@ -701,9 +707,43 @@ void DB_loadThold(string _table, double &_fpi[][7])
     }
 }
 
-void DB_createTable(string _tholdtablename, string _logTableName)
+
+void DB_createTable(string _tholdt, string _fpit)
 {
-    
+    string query = "";
+    StringConcatenate(
+        query,
+        "CREATE TABLE IF NOT EXISTS `" + _fpit + "` (",
+        "`ringidx`  tinyint(4) NULL DEFAULT NULL ,",
+        "`lfpi`  float(8,7) NULL DEFAULT NULL ,",
+        "`sfpi`  float(8,7) NULL DEFAULT NULL ,",
+        "`marketdate`  datetime NULL DEFAULT NULL ",
+        ")",
+        "ENGINE=MyISAM ",
+        "DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci ",
+        "CHECKSUM=0 ",
+        "ROW_FORMAT=FIXED ",
+        "DELAY_KEY_WRITE=0"
+    );
+    mysql.exec(query);
+
+      
+    query = ""; 
+    StringConcatenate(
+        query,
+        "CREATE TABLE IF NOT EXISTS `" + _tholdt + "` (",
+        "`ringidx` tinyint(4) NULL DEFAULT NULL ,",
+        "`lthold`  float(8,7) NULL DEFAULT NULL ,",
+        "`sthold`  float(8,7) NULL DEFAULT NULL ,",
+        "UNIQUE INDEX `idx_ringidx` (`ringidx`) USING BTREE "
+        ")",
+        "ENGINE=MyISAM ",
+        "DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci ",
+        "CHECKSUM=0 ",
+        "ROW_FORMAT=FIXED ",
+        "DELAY_KEY_WRITE=0"
+    );
+    mysql.exec(query);
 }
 
 
