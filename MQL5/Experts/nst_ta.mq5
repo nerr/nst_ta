@@ -84,14 +84,12 @@ int OnInit()
     ArrayResize(FPI, RingNum);
     FPI[0][1] = 0.0;  //-- why init value is not zero?
 
-    //-- about mysql
+    //-- connect to mysql
     mysql.connect(DBHost, DBUser, DBPass, DBName);
-
     //-- create table
     DBFpiTable = DBFpiTable + AccountInfoInteger(ACCOUNT_LOGIN);
     DBTholdTable = DBTholdTable + AccountInfoInteger(ACCOUNT_LOGIN);
     DB_createTable(DBTholdTable, DBFpiTable);
-    
     //-- load thold
     DB_loadThold(DBTholdTable, FPI);
 
@@ -706,7 +704,6 @@ void DB_loadThold(string _table, double &_fpi[][7])
             _fpi[ringidx][4] = lthold;
     }
 }
-
 
 void DB_createTable(string _tholdt, string _fpit)
 {
