@@ -47,10 +47,12 @@ END
 //
 DELIMITER ;
 
+
+
 /* call all procdeure */
-DROP PROCEDURE IF EXISTS `call_all_update_thold`;
+DROP PROCEDURE IF EXISTS `nst_ta_call_all_update_thold`;
 DELIMITER //
-CREATE PROCEDURE `call_all_update_thold`()
+CREATE PROCEDURE `nst_ta_call_all_update_thold`()
 BEGIN
 	CALL nst_ta_update_thold(833,4);
 	CALL nst_ta_update_thold(7070,4);
@@ -63,8 +65,9 @@ DELIMITER ;
 
 
 /* call event */
-DROP EVENT IF EXISTS nst_call_all;
-CREATE EVENT nst_call_all
-    ON SCHEDULE EVERY HOUR
-    DO
-      CALL call_all_update_thold();
+DROP EVENT IF EXISTS `nst_ta_sche_update_thold`;
+CREATE EVENT `nst_ta_sche_update_thold`
+ON SCHEDULE EVERY 1 HOUR STARTS '2012-12-26 11:05:46'
+ON COMPLETION NOT PRESERVE
+ENABLE
+DO CALL nst_ta_call_all_update_thold();
