@@ -593,10 +593,10 @@ int DB_connectdb()
 }
 
 //--
-void DB_createTables(int _dbconnid, string _logt, string _tholdt)
+void DB_createTables(int _dbconnid, string _fpit, string _tholdt)
 {
     string query = StringConcatenate(
-        "CREATE TABLE IF NOT EXISTS `" + _logt + "` (",
+        "CREATE TABLE IF NOT EXISTS `" + _fpit + "` (",
         "`ringidx`  tinyint(4) NULL DEFAULT NULL ,",
         "`lfpi`  float(8,7) NULL DEFAULT NULL ,",
         "`sfpi`  float(8,7) NULL DEFAULT NULL ,",
