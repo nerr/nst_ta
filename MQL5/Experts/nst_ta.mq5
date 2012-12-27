@@ -1,7 +1,5 @@
 /*
  * >>>TODO:
- * []calculate lots funcs
- * []open ring chance
  *
  */
 
@@ -24,11 +22,19 @@
  * Extern Items
  *
  */
-extern string TradeSetting  = "---------Trade Setting--------";
-extern bool   EnableTrade   = true;
-extern bool   Superaddition = false;
-extern double BaseLots      = 0.5;
-extern int    MagicNumber   = 99901;
+input string TradeSetting  = "---------Trade Setting--------";
+input bool   EnableTrade   = true;
+input bool   Superaddition = false;
+input double BaseLots      = 0.5;
+input int    MagicNumber   = 99901;
+input string NotifSetting  = "---------Notification Setting--------";
+input bool   EnableNotifi  = true;
+input string MySQLSetting  = "---------MySQL Setting--------";   
+input bool   LogPriceToDB  = true;
+input string DBHost        = "127.0.0.1";
+input string DBUser        = "root";
+input string DBPass        = "911911";
+input string DBName        = "metatrader";
 
 
 
@@ -37,7 +43,13 @@ extern int    MagicNumber   = 99901;
  *
  */
 #include <Trade\SymbolInfo.mqh>
+#include <Trade\Trade.mqh>
+#include <Database\EAX_MySQL.mqh>
 
+
+
+CSymbolInfo *csymbolinfo = new CSymbolInfo();
+EAX_MySQL *mysql = new EAX_MySQL();
 
 
 /*
@@ -47,8 +59,10 @@ extern int    MagicNumber   = 99901;
 string  Ring[][3];
 int     RingNum;
 double  FPI[][7];
-
 int     orderTableHeaderX[10] = {760, 790, 855, 920, 985, 1060, 1130, 1200, 1270, 1330};
+
+string  DBFpiTable    = "nst_ta_fpi_";
+string  DBTholdTable  = "nst_ta_thold_";
 
 
 
@@ -70,6 +84,15 @@ int OnInit()
     ArrayResize(FPI, RingNum);
     FPI[0][1] = 0.0;  //-- why init value is not zero?
 
+    //-- connect to mysql
+    mysql.connect(DBHost, DBUser, DBPass, DBName);
+    //-- create table
+    DBFpiTable = DBFpiTable + AccountInfoInteger(ACCOUNT_LOGIN);
+    DBTholdTable = DBTholdTable + AccountInfoInteger(ACCOUNT_LOGIN);
+    DB_createTable(DBTholdTable, DBFpiTable);
+    //-- load thold
+    DB_loadThold(DBTholdTable, FPI);
+
     return(0);
 }
 
@@ -78,16 +101,24 @@ void OnDeinit(const int reason)
     //-- destroy timer
     EventKillTimer();
 
+    delete mysql;
+
 }
 
 void OnTick()
 {
-    //run();
+    run();
+    
+    if(LogPriceToDB == true)
+        DB_logFpi2DB(DBFpiTable, FPI);
 }
 
 void OnTimer()
 {
     run();
+
+    if(TimeCurrent() % 100 == 0)
+        DB_loadThold(DBTholdTable, FPI);
 }
 
 /*
@@ -220,57 +251,270 @@ void R_getSymbols(string &_symbols[])
  */
 void R_getFPI(double &_fpi[][7], string &_ring[][3])
 {
-    CSymbolInfo *csymbolinfo = new CSymbolInfo();
-
-    double _price[3];
+    double l_price[3];
+    double s_price[3];
 
     for(int i = 0; i < RingNum; i ++)
     {
-        if(!csymbolinfo.Name(Ring[i][0]) || !csymbolinfo.Name(Ring[i][1]) || !csymbolinfo.Name(Ring[i][2]))
-            continue;
-        
-        //-- long 
-        _price[0] = SymbolInfoDouble(Ring[i][0], SYMBOL_ASK);
-        _price[1] = SymbolInfoDouble(Ring[i][1], SYMBOL_BID);
-        _price[2] = SymbolInfoDouble(Ring[i][2], SYMBOL_BID);
-        //-- buy fpi
-        _fpi[i][0] = _price[0] / (_price[1] * _price[2]);
-        //-- check buy chance
-        /*if(_fpi[i][1] <= _fpi[i][5] && EnableTrade == true && (ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][1] <= RingOrd[i][1] - 0.0005)))
+        for(int x = 0; x < 3; x++)
         {
-            openRing(0, i, _price, _fpi[i][1], Ring, MagicNumber, BaseLots, LotsDigit);
-        }*/
-        //-- buy FPI history
-        if(_fpi[i][1] == 0 || _fpi[i][0] < _fpi[i][1]) 
-            _fpi[i][1] = _fpi[i][0];
+            csymbolinfo.Name(Ring[i][x]);
+            if(csymbolinfo.RefreshRates())
+            {
+                if(x == 0)
+                {
+                    l_price[x] = csymbolinfo.Ask();
+                    s_price[x] = csymbolinfo.Bid();
+                }
+                else
+                {
+                    l_price[x] = csymbolinfo.Bid();
+                    s_price[x] = csymbolinfo.Ask();
+                }
+            }
+            else
+            {
+                l_price[x] = 0;
+                s_price[x] = 0;
+            }
+        }
+        
+        //-- long
+        if(l_price[0] > 0 && l_price[1] > 0 && l_price[2] > 0)
+        {
+            _fpi[i][0] = l_price[0] / (l_price[1] * l_price[2]);
+            //-- check buy chance
+            //if(_fpi[i][0] < _fpi[i][4] && EnableTrade == true && (R_ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][0] <= RingOrd[i][0] - 0.0005)))
+            if(_fpi[i][0] < _fpi[i][4] && EnableTrade == true && R_ringHaveOrder(i) == false)
+            {
+                O_openRing(0, i, l_price, _fpi[i][0], Ring, MagicNumber, BaseLots);
+            }
+            //-- buy FPI history
+            if(_fpi[i][1] == 0 || _fpi[i][0] < _fpi[i][1]) 
+                _fpi[i][1] = _fpi[i][0];
+        }
+        else
+            _fpi[i][0] = 0;
 
         //-- short
-        _price[0] = SymbolInfoDouble(Ring[i][0], SYMBOL_BID);
-        _price[1] = SymbolInfoDouble(Ring[i][1], SYMBOL_ASK);
-        _price[2] = SymbolInfoDouble(Ring[i][2], SYMBOL_ASK);
-        //-- sell fpi
-        _fpi[i][2] = _price[0] / (_price[1] * _price[2]);
-        //-- check sell chance
-        /*if(_fpi[i][6] > 0 && _fpi[i][3] >= _fpi[i][6] && EnableTrade == true && (ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][3] >= RingOrd[i][3] + 0.0005)))
+        if(s_price[0] > 0 && s_price[1] > 0 && s_price[2] > 0)
         {
-            openRing(1, i, _price, _fpi[i][3], Ring, MagicNumber, BaseLots, LotsDigit);
-        }*/
-        //-- sell FPI history
-        if(_fpi[i][3] == 0 || _fpi[i][2] > _fpi[i][3]) 
-            _fpi[i][3] = _fpi[i][2];
+            //-- sell fpi
+            _fpi[i][2] = s_price[0] / (s_price[1] * s_price[2]);
+            //-- check sell chance
+            //if(_fpi[i][5] > 0 && _fpi[i][2] >= _fpi[i][5] && EnableTrade == true && (R_ringHaveOrder(i) == false || (Superaddition == true && _fpi[i][2] >= RingOrd[i][2] + 0.0005)))
+            if(_fpi[i][5] > 0 && _fpi[i][2] >= _fpi[i][5] && EnableTrade == true && R_ringHaveOrder(i) == false)
+            {
+                O_openRing(1, i, s_price, _fpi[i][2], Ring, MagicNumber, BaseLots);
+            }
+            //-- sell FPI history
+            if(_fpi[i][3] == 0 || _fpi[i][2] > _fpi[i][3]) 
+                _fpi[i][3] = _fpi[i][2];
+        }
+        else
+            _fpi[i][2] = 0;
+
 
 
         //-- sH-bL
         if(_fpi[i][6]==0 || _fpi[i][3] - _fpi[i][1] > _fpi[i][6])
             _fpi[i][6] = _fpi[i][3] - _fpi[i][1];
 
-        //-- auto set fpi thold
-        if(_fpi[i][6] >= 0.001 && _fpi[i][4] == 0 && _fpi[i][5] == 0 && _fpi[i][1] != 0 && _fpi[i][3] != 0)
+    }
+}
+
+//-- check ring have order or not by ring index number
+bool R_ringHaveOrder(int _ringindex)
+{
+    int total = OrdersTotal();
+    int  ringidx = -1;
+    string comm = "";
+
+    if(total == 0)
+        return(false);
+    else
+    {
+        for(int i = 0; i < total; i++)
         {
-            _fpi[i][4] = _fpi[i][1]; //-- 
-            _fpi[i][5] = _fpi[i][3]; //--
+            comm = "";
+            if(OrderGetTicket(i))
+            {
+                if(OrderGetInteger(ORDER_MAGIC) == MagicNumber)
+                {
+                    comm = OrderGetString(ORDER_COMMENT);
+                    ringidx = StringToInteger(StringSubstr(comm, 0, StringFind(comm, "#", 0)));
+                    
+                    if(ringidx == _ringindex)
+                        return(true);
+                }
+            }
         }
     }
+
+    return(false);
+}
+
+
+
+/*
+ * Order Functions
+ *
+ */
+//-- open ring _direction = 0(buy)/1(sell)
+bool O_openRing(int _direction, int _index, double &_price[], double _fpi, string &_ring[][3], int _magicnumber, double _lots)
+{
+    int b_c_direction, limit_direction, statuscode[3];
+    
+    //-- adjust b c order direction
+    if(_direction == 0)
+        b_c_direction = 1;
+    else if(_direction == 1)
+        b_c_direction = 0;
+
+    //-- make comment string
+    string commentText = "|" + IntegerToString(_direction) + "@" + DoubleToString(_fpi, 7);
+
+    //-- calculate last symbol order losts
+    double c_lots = NormalizeDouble(_lots * _price[1], 2);
+    
+    //-- check lots of three orders
+    if(!O_checkLots(_ring[_index][0], _lots) || !O_checkLots(_ring[_index][1], _lots) || !O_checkLots(_ring[_index][2], c_lots))
+    {
+      N_outputLog("Lots error. [RingIdx:" + IntegerToString(_index) + "][AB:" + DoubleToString(_lots, 2) + "][C:" + DoubleToString(c_lots, 2), "Trading Error");
+      return(false);
+    }
+    
+    //-- open order a
+    statuscode[0] = O_openOrder(_ring[_index][0], 0, _direction, _lots, _price[0], _magicnumber, IntegerToString(_index) + "#1" + commentText);
+    if(statuscode[0] == 10015)
+    {
+        if(_direction==0 && SymbolInfoDouble(_ring[_index][0], SYMBOL_ASK) < _price[0])
+            statuscode[0] = O_openOrder(_ring[_index][0], 0, _direction, _lots, SymbolInfoDouble(_ring[_index][0], SYMBOL_ASK), _magicnumber, IntegerToString(_index) + "#1" + commentText);
+        else if(_direction==1 && SymbolInfoDouble(_ring[_index][0], SYMBOL_BID) > _price[0])
+            statuscode[0] = O_openOrder(_ring[_index][0], 0, _direction, _lots, SymbolInfoDouble(_ring[_index][0], SYMBOL_BID), _magicnumber, IntegerToString(_index) + "#1" + commentText);
+    }
+    if(statuscode[0] == 10009)
+        N_outputLog("nst_ta - First order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "]", "Trading info");
+    else
+    {
+        N_outputLog("nst_ta - First order can not be send. cancel ring. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "][Code:" + IntegerToString(statuscode[0]) + "]", "Trading error");
+        return(false);
+    }
+
+    //-- open order b
+    statuscode[1] = O_openOrder(_ring[_index][1], 0, b_c_direction, _lots, _price[1], _magicnumber, IntegerToString(_index) + "#2" + commentText);
+    if(statuscode[1] == 10015)
+    {
+        if(b_c_direction==0 && SymbolInfoDouble(_ring[_index][1], SYMBOL_ASK) < _price[1])
+            statuscode[1] = O_openOrder(_ring[_index][1], 0, b_c_direction, _lots, SymbolInfoDouble(_ring[_index][1], SYMBOL_ASK), _magicnumber, IntegerToString(_index) + "#2" + commentText);
+        else if(b_c_direction==1 && SymbolInfoDouble(_ring[_index][1], SYMBOL_BID) > _price[1])
+            statuscode[1] = O_openOrder(_ring[_index][1], 0, b_c_direction, _lots, SymbolInfoDouble(_ring[_index][1], SYMBOL_BID), _magicnumber, IntegerToString(_index) + "#2" + commentText);
+    }
+    if(statuscode[1] == 10009)
+        N_outputLog("nst_ta - Second order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "]", "Trading info");
+    else
+    {
+        N_outputLog("nst_ta - Second order can not be send. open limit order. [" + _ring[_index][1] + "][Code:" + IntegerToString(statuscode[0]) + "]", "Trading error");
+
+        limit_direction = b_c_direction + 2;
+
+        statuscode[1] = O_openOrder(_ring[_index][1], 1, limit_direction, _lots, _price[1], _magicnumber, IntegerToString(_index) + "#2" + commentText);
+        if(statuscode[1] == 10009)
+            N_outputLog("nst_ta - Second limit order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "]", "Trading info");
+        else
+            N_outputLog("nst_ta - Second limit order can not be send. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][1] + "][Code:" + IntegerToString(statuscode[0]) + "]", "Trading error");
+    }
+
+    
+    //-- open order c
+    statuscode[2] = O_openOrder(_ring[_index][2], 0, b_c_direction, c_lots, _price[2], _magicnumber, IntegerToString(_index) + "#3" + commentText);
+    if(statuscode[2] == 10015)
+    {
+        if(b_c_direction==0 && SymbolInfoDouble(_ring[_index][2], SYMBOL_ASK) < _price[2])
+            statuscode[2] = O_openOrder(_ring[_index][2], 0, b_c_direction, c_lots, SymbolInfoDouble(_ring[_index][2], SYMBOL_ASK), _magicnumber, IntegerToString(_index) + "#3" + commentText);
+        else if(b_c_direction==1 && SymbolInfoDouble(_ring[_index][2], SYMBOL_BID) > _price[2])
+            statuscode[2] = O_openOrder(_ring[_index][2], 0, b_c_direction, c_lots, SymbolInfoDouble(_ring[_index][2], SYMBOL_BID), _magicnumber, IntegerToString(_index) + "#3" + commentText);
+    }
+    if(statuscode[2] == 10009)
+        N_outputLog("nst_ta - Third order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][2] + "]", "Trading info");
+    else
+    {
+        N_outputLog("nst_ta - Third order can not be send. open limit order. [" + _ring[_index][2] + "][Code:" + IntegerToString(statuscode[0]) + "]", "Trading error");
+
+        limit_direction = b_c_direction + 2;
+
+        statuscode[2] = O_openOrder(_ring[_index][2], 1, limit_direction, c_lots, _price[2], _magicnumber, IntegerToString(_index) + "#3" + commentText);
+        if(statuscode[2] == 10009)
+            N_outputLog("nst_ta - Third limit order opened. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][2] + "]", "Trading info");
+        else
+            N_outputLog("nst_ta - Third limit order can not be send. [RingIdx:" + IntegerToString(_index) + "][Symbol:" + _ring[_index][2] + "][Code:" + IntegerToString(statuscode[0]) + "]", "Trading error");
+    }
+
+    return(true);
+}
+
+//--
+int O_openOrder(string _symbol, int _action, int _direction, double _lots, double _price, int _magicnumber, string _comment)
+{
+   MqlTradeRequest request;
+   request.action = O_getAction(_action); 
+   request.type   = O_getType(_direction);
+   request.magic  = _magicnumber;
+   request.symbol = _symbol;
+   request.volume = _lots;
+   request.price  = _price;
+   request.comment= _comment;
+   request.sl     = 0;
+   request.tp     = 0;
+ 
+   MqlTradeResult result;
+   OrderSend(request, result);
+
+   return result.retcode;
+}
+
+//--
+ENUM_TRADE_REQUEST_ACTIONS O_getAction(int _idx)
+{
+   switch(_idx)
+   {
+      case(0):return(TRADE_ACTION_DEAL);
+      case(1):return(TRADE_ACTION_PENDING);
+      case(2):return(TRADE_ACTION_SLTP);
+      case(3):return(TRADE_ACTION_MODIFY);
+      case(4):return(TRADE_ACTION_REMOVE);
+   }
+   return(WRONG_VALUE);
+}
+
+//-- 
+ENUM_ORDER_TYPE O_getType(int _idx)
+{
+   switch(_idx)
+   {
+      case(0):return(ORDER_TYPE_BUY);
+      case(1):return(ORDER_TYPE_SELL);
+      case(2):return(ORDER_TYPE_BUY_LIMIT);
+      case(3):return(ORDER_TYPE_SELL_LIMIT);
+      case(4):return(ORDER_TYPE_BUY_STOP);
+      case(5):return(ORDER_TYPE_SELL_STOP);
+      case(6):return(ORDER_TYPE_BUY_STOP_LIMIT);
+      case(7):return(ORDER_TYPE_SELL_STOP_LIMIT);
+   }
+   return(WRONG_VALUE);
+}
+
+//--
+bool O_checkLots(string _symbol, double _lots)
+{
+   double min = SymbolInfoDouble(_symbol, SYMBOL_VOLUME_MIN);
+   double max = SymbolInfoDouble(_symbol, SYMBOL_VOLUME_MAX);
+   int    setp= (int)(_lots * 100000) % (int)(SymbolInfoDouble(_symbol, SYMBOL_VOLUME_STEP) * 100000);
+   
+   if(_lots >= min && _lots <= max && setp == 0)
+      return(true);
+   else
+      return(false);
 }
 
 
@@ -408,18 +652,96 @@ void D_updateFpiInfo(double &_fpi[][7])
         D_setTextObj(prefix + row + "_col_6", DoubleToString(_fpi[i][2], digit), DeepSkyBlue);
         D_setTextObj(prefix + row + "_col_7", DoubleToString(_fpi[i][3], digit));
         if(_fpi[i][4] > 0)
-        {
             D_setTextObj(prefix + row + "_col_8", DoubleToString(_fpi[i][4], digit), C'0xe6,0xdb,0x74');
-            D_setTextObj(prefix + row + "_col_9", DoubleToString(_fpi[i][5], digit), C'0xe6,0xdb,0x74');
-        }
         else
-        {
             D_setTextObj(prefix + row + "_col_8", DoubleToString(_fpi[i][4], digit));
+        if(_fpi[i][5] > 0)
+            D_setTextObj(prefix + row + "_col_9", DoubleToString(_fpi[i][5], digit), C'0xe6,0xdb,0x74');
+        else
             D_setTextObj(prefix + row + "_col_9", DoubleToString(_fpi[i][5], digit));
-        }
     }
 }
 
+
+
+/*
+ * MySQL Functions
+ *
+ */
+void DB_logFpi2DB(string _table, double &_fpi[][7])
+{
+    string marketdate = TimeToString(TimeCurrent(),TIME_DATE|TIME_MINUTES);
+
+    for(int i = 0; i < RingNum; i++)
+    {
+        mysql.AddNew(_table);
+        mysql.set("ringidx", i);
+        mysql.set("lfpi", _fpi[i][0]);
+        mysql.set("sfpi", _fpi[i][2]);
+        mysql.set("marketdate", marketdate);
+        mysql.write();
+    }
+}
+
+void DB_loadThold(string _table, double &_fpi[][7])
+{
+    for(int j = 0; j < RingNum; j++)
+    {
+        _fpi[j][5] = 0;
+        _fpi[j][4] = 0;
+    }
+
+    int result = mysql.read_rows("SELECT * FROM " + _table + " WHERE sthold>0 OR lthold>0");
+    for(int i = 0; i < result; i++)
+    {
+        double sthold = (double)mysql.get("sthold", i);
+        double lthold = (double)mysql.get("lthold", i);
+        int ringidx = (int)mysql.get("ringidx", i);
+
+        if(sthold > 0)
+            _fpi[ringidx][5] = sthold;
+        if(lthold > 0)
+            _fpi[ringidx][4] = lthold;
+    }
+}
+
+void DB_createTable(string _tholdt, string _fpit)
+{
+    string query = "";
+    StringConcatenate(
+        query,
+        "CREATE TABLE IF NOT EXISTS `" + _fpit + "` (",
+        "`ringidx`  tinyint(4) NULL DEFAULT NULL ,",
+        "`lfpi`  float(8,7) NULL DEFAULT NULL ,",
+        "`sfpi`  float(8,7) NULL DEFAULT NULL ,",
+        "`marketdate`  datetime NULL DEFAULT NULL ",
+        ")",
+        "ENGINE=MyISAM ",
+        "DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci ",
+        "CHECKSUM=0 ",
+        "ROW_FORMAT=FIXED ",
+        "DELAY_KEY_WRITE=0"
+    );
+    mysql.exec(query);
+
+      
+    query = ""; 
+    StringConcatenate(
+        query,
+        "CREATE TABLE IF NOT EXISTS `" + _tholdt + "` (",
+        "`ringidx` tinyint(4) NULL DEFAULT NULL ,",
+        "`lthold`  float(8,7) NULL DEFAULT NULL ,",
+        "`sthold`  float(8,7) NULL DEFAULT NULL ,",
+        "UNIQUE INDEX `idx_ringidx` (`ringidx`) USING BTREE "
+        ")",
+        "ENGINE=MyISAM ",
+        "DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci ",
+        "CHECKSUM=0 ",
+        "ROW_FORMAT=FIXED ",
+        "DELAY_KEY_WRITE=0"
+    );
+    mysql.exec(query);
+}
 
 
 /*
@@ -439,4 +761,11 @@ void N_sendAlert(string _text = "null", string _type="Information")
     N_outputLog(_text, _type);
     PlaySound("alert.wav");
     Alert(_text);
+}
+
+//--
+void N_pushInfo(string _text, string _type="Information")
+{
+    string text = ">>>" + _type + ":" + _text;
+    SendNotification(text);
 }
