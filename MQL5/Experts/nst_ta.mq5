@@ -375,7 +375,7 @@ bool O_openRing(int _direction, int _index, double &_price[], double _fpi, strin
     string commentText = "|" + IntegerToString(_direction) + "@" + DoubleToString(_fpi, 7);
 
     //-- calculate last symbol order losts
-    double c_lots = NormalizeDouble(_lots * _price[2], 2);
+    double c_lots = NormalizeDouble(_lots * _price[1], 2);
     
     //-- check lots of three orders
     if(!O_checkLots(_ring[_index][0], _lots) || !O_checkLots(_ring[_index][1], _lots) || !O_checkLots(_ring[_index][2], c_lots))
