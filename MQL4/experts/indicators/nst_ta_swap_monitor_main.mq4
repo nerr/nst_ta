@@ -259,17 +259,14 @@ void updateSwapInfo(string &_ring[][3])
         sinfo[2] = MarketInfo(_ring[i][1], MODE_SWAPSHORT);
         sinfo[4] = MarketInfo(_ring[i][2], MODE_SWAPSHORT);
         
-        if(StringSubstr(_ring[i][0], 0, 3) == "USD")
+        sinfo[1] = sinfo[0];
+        sinfo[3] = sinfo[2] / MarketInfo(_ring[i][1], MODE_ASK);
+        sinfo[5] = sinfo[4] * MarketInfo(_ring[i][1], MODE_ASK) / MarketInfo(_ring[i][0], MODE_ASK);
+        if(StringSubstr(_ring[i][0], 0, 3) == "EUR")
         {
-            sinfo[1] = sinfo[0];
-            sinfo[3] = sinfo[2] / MarketInfo(_ring[i][2], MODE_ASK);
-            sinfo[5] = sinfo[4] * MarketInfo(_ring[i][1], MODE_ASK) / MarketInfo(_ring[i][0], MODE_ASK);
-        }
-        else if(StringSubstr(_ring[i][0], 0, 3) == "EUR")
-        {
-            sinfo[1] = sinfo[0] * MarketInfo("EURUSD", MODE_BID);
-            sinfo[3] = sinfo[2] / MarketInfo("USDMXN", MODE_ASK);
-            sinfo[5] = sinfo[4] * MarketInfo(_ring[i][1], MODE_ASK) / MarketInfo("USDJPY", MODE_ASK);
+            sinfo[1] *= MarketInfo("EURUSD", MODE_BID);
+            sinfo[3] *= MarketInfo("EURUSD", MODE_BID);
+            sinfo[5] *= MarketInfo("EURUSD", MODE_BID);
         }
 
         sinfo[6] = sinfo[1] + sinfo[3] + sinfo[5];
