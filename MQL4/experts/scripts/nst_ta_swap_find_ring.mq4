@@ -9,10 +9,10 @@ string Ring[200, 4], SymExt;
 extern string   Currencies = "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|LTL|LVL|HRK|CCK|RON|";
 
 //-- controler
-int     swapmorethan = 8;
+int     swapmorethan = 4;
 bool    enabletrade = false;
 bool    checkusedmargin = false;
-double  lots = 3;
+double  lots = 1;
 int     magicnumber = 701;
 string  comm = "test";
 
@@ -191,8 +191,13 @@ bool openRingS(int _direction, int _index, string _comment, string _ring[][], in
 */
 void getringswap(int _i, double &_rs[2], double _l)
 {
-    _rs[0] = calcuSwap(0, Ring[_i][1], _l) + calcuSwap(1, Ring[_i][2], _l) + calcuSwap(1, Ring[_i][3], _l * MarketInfo(Ring[_i][2], MODE_ASK));
-    _rs[1] = calcuSwap(1, Ring[_i][1], _l) + calcuSwap(0, Ring[_i][2], _l) + calcuSwap(0, Ring[_i][3], _l * MarketInfo(Ring[_i][2], MODE_BID));
+    _rs[0]  = calcuSwap(0, Ring[_i][1], _l);
+    _rs[0] += calcuSwap(1, Ring[_i][2], _l);
+    _rs[0] += calcuSwap(1, Ring[_i][3], _l * MarketInfo(Ring[_i][2], MODE_ASK));
+    
+    _rs[1]  = calcuSwap(1, Ring[_i][1], _l);
+    _rs[1] += calcuSwap(0, Ring[_i][2], _l);
+    _rs[1] += calcuSwap(0, Ring[_i][3], _l * MarketInfo(Ring[_i][2], MODE_BID));
 }
 
 /*
@@ -225,6 +230,9 @@ double calcuSwap(int _d, string _s, double _l) //--
     
     if(MarketInfo(_s, _d + 9) > 0)
         swap = MarketInfo(_s, _d + 18) / MarketInfo(_s, _d + 9) * usdprice * _l;
+        
+    if(_s=="EURJPY" || _s=="AUDJPY" ||_s=="GBPJPY")
+        swap *= 100;
     
     return(swap);
 }
