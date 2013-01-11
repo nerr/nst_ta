@@ -173,3 +173,32 @@ void R_getSymbols(string &_symbols[])
         }
     }
 }
+
+
+
+double calcuSwap(int _d, string _s, double _l) //--
+{
+    double swap, usdprice;
+    string firstcurr = StringSubstr(_s, 0, 3);
+    
+    if(firstcurr == "USD")
+        usdprice = 1;
+    else
+    {
+        if(MarketInfo(firstcurr + "USD", MODE_BID) > 0)
+        {
+            usdprice = MarketInfo(firstcurr + "USD", _d + 9);
+        }
+        else if(MarketInfo("USD" + firstcurr, MODE_BID) > 0)
+        {
+            usdprice = 1 / MarketInfo("USD" + firstcurr, _d + 9);
+        }
+        else
+            return(0);
+    }
+    
+    if(MarketInfo(_s, _d + 9) > 0)
+        swap = MarketInfo(_s, _d + 18) / MarketInfo(_s, _d + 9) * usdprice * _l;
+    
+    return(swap);
+}
