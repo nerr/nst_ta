@@ -9,10 +9,10 @@ string Ring[200, 4], SymExt;
 extern string   Currencies = "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|LTL|LVL|HRK|CCK|RON|";
 
 //-- controler
-int     swapmorethan = 4;
+int     swapmorethan = 0;
 bool    enabletrade = false;
 bool    checkusedmargin = false;
-double  lots = 1;
+double  lots = 4;
 int     magicnumber = 701;
 string  comm = "test";
 
@@ -211,6 +211,7 @@ double calcuSwap(int _d, string _s, double _l) //--
 {
     double swap, usdprice;
     string firstcurr = StringSubstr(_s, 0, 3);
+    string secondcurr = StringSubstr(_s, 3, 3);
     
     if(firstcurr == "USD")
         usdprice = 1;
@@ -231,7 +232,7 @@ double calcuSwap(int _d, string _s, double _l) //--
     if(MarketInfo(_s, _d + 9) > 0)
         swap = MarketInfo(_s, _d + 18) / MarketInfo(_s, _d + 9) * usdprice * _l;
         
-    if(_s=="EURJPY" || _s=="AUDJPY" ||_s=="GBPJPY")
+    if(secondcurr=="JPY" && firstcurr!="MXN")
         swap *= 100;
     
     return(swap);
