@@ -42,9 +42,13 @@ string db_table    = "dayinfo";
 
 double FPI[2, 7];
 int RingNum = 2;
+int RingSpread[2];
 int orderTableX[6] = {25, 100, 200, 300, 400, 500};
 
 string SymbolArr[5] = {"USDJPY", "USDMXN", "MXNJPY", "EURJPY", "EURMXN"};
+
+
+int orderLine = 0;
 
 
 
@@ -104,16 +108,16 @@ void initDebugInfo(string _ring[][])
     y += 15;
     createTextObj("fpi_header", 25,    y, ">>> Rings(" + ringnum + ") & FPI", titlecolor);
     y += 15;
-    string fpiTableHeaderName[10] = {"Id", "SymbolA", "SymbolB", "SymbolC", "lFPI", "lLowest", "sFPI", "sHighest", "lThold", "sThold"};
-    int    fpiTableHeaderX[10]    = {25, 50, 115, 181, 250, 325, 400, 475, 550, 625};
-    for(i = 0; i < 11; i++)
+    string fpiTableHeaderName[12] = {"Id", "SymbolA", "SymbolB", "SymbolC", "lFPI", "lLowest", "sFPI", "sHighest", "lThold", "sThold", "Spread", "MinSpread"};
+    int    fpiTableHeaderX[12]    = {25, 50, 115, 181, 250, 325, 400, 475, 550, 625, 700, 775};
+    for(i = 0; i < 12; i++)
         createTextObj("fpi_header_col_" + i, fpiTableHeaderX[i], y, fpiTableHeaderName[i]);
 
     for(i = 0; i < ringnum; i ++)
     {
         y += 15;
 
-        for (j = 0; j < 10; j ++) 
+        for (j = 0; j < 12; j ++) 
         {
             if(j == 0) 
                 createTextObj("fpi_body_row_" + (i) + "_col_" + (j), fpiTableHeaderX[j], y, (i+1), Gray);
@@ -164,12 +168,13 @@ void initDebugInfo(string _ring[][])
     {
         createTextObj("order_header_col_" + i, orderTableX[i], y, orderTableName[i]);
     }
+    orderLine = y;
 }
 
 void updateOrderInfo(int _mn)
 {
     string prefix = "order_body_row_";
-    int j, i, y = 255;
+    int j, i, y = orderLine;
     double oinfo[5][5]; //--size; profit; commission; swap; total;
     double sum[5];
 
@@ -300,15 +305,22 @@ void updateFpiInfo(double &_fpi[][7])
     int digit = 7;
     string prefix = "fpi_body_row_";
     string row = "", col = "";
+    int spread = 0;
 
     for(int i = 0; i < RingNum; i++)    //-- row 5 to row 10
     {
         row = (i);
+        
+        spread  = MarketInfo(Ring[i][0], MODE_SPREAD);
+        spread += MarketInfo(Ring[i][1], MODE_SPREAD);
+        spread += MarketInfo(Ring[i][2], MODE_SPREAD);
 
         setTextObj(prefix + row + "_col_4", DoubleToStr(_fpi[i][0], digit), DeepSkyBlue);
         setTextObj(prefix + row + "_col_5", DoubleToStr(_fpi[i][1], digit));
         setTextObj(prefix + row + "_col_6", DoubleToStr(_fpi[i][2], digit), DeepSkyBlue);
         setTextObj(prefix + row + "_col_7", DoubleToStr(_fpi[i][3], digit));
+        setTextObj(prefix + row + "_col_10", spread);
+        
         if(_fpi[i][4] > 0)
         {
             setTextObj(prefix + row + "_col_8", DoubleToStr(_fpi[i][4], digit), C'0xe6,0xdb,0x74');
@@ -319,6 +331,11 @@ void updateFpiInfo(double &_fpi[][7])
             setTextObj(prefix + row + "_col_8", DoubleToStr(_fpi[i][4], digit));
             setTextObj(prefix + row + "_col_9", DoubleToStr(_fpi[i][5], digit));
         }
+        
+        if(spread < RingSpread[i] || RingSpread[i] == 0)
+            RingSpread[i] = spread;
+        
+        setTextObj(prefix + row + "_col_11", RingSpread[i], C'0xe6,0xdb,0x74');
     }
 }
 
