@@ -9,10 +9,10 @@ string Ring[200, 4], SymExt;
 extern string   Currencies = "EUR|USD|GBP|CAD|AUD|CHF|JPY|NZD|DKK|SEK|NOK|MXN|PLN|CZK|ZAR|SGD|HKD|TRY|LTL|LVL|HRK|CCK|RON|";
 
 //-- controler
-int     swapmorethan = 0;
+double  swapmorethan = 0;
 bool    enabletrade = false;
 bool    checkusedmargin = false;
-double  lots = 4;
+double  lots = 1.0;
 int     magicnumber = 701;
 string  comm = "test";
 
