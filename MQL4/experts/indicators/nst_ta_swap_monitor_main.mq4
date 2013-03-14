@@ -44,6 +44,7 @@ double FPI[2, 7];
 int RingNum = 2;
 int RingSpread[2];
 int orderTableX[6] = {25, 100, 200, 300, 400, 500};
+bool nottradesingal = false;
 
 string SymbolArr[5] = {"USDJPY", "USDMXN", "MXNJPY", "EURJPY", "EURMXN"};
 
@@ -335,8 +336,8 @@ void updateFpiInfo(double &_fpi[][7])
         if(spread < RingSpread[i] || RingSpread[i] == 0)
             RingSpread[i] = spread;
 
-        if(RingSpread[i] < 300)
-            sendAlert(Ring[i][1] + "can trade now!");
+        if(RingSpread[i] < 300 && nottradesingal == true)
+            sendAlert(Ring[i][1] + " can trade now!");
 
         
         setTextObj(prefix + row + "_col_11", RingSpread[i], C'0xe6,0xdb,0x74');
