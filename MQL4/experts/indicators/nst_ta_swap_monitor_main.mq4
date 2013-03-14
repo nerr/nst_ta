@@ -334,6 +334,10 @@ void updateFpiInfo(double &_fpi[][7])
         
         if(spread < RingSpread[i] || RingSpread[i] == 0)
             RingSpread[i] = spread;
+
+        if(RingSpread[i] < 300)
+            sendAlert(Ring[i][1] + "can trade now!");
+
         
         setTextObj(prefix + row + "_col_11", RingSpread[i], C'0xe6,0xdb,0x74');
     }
