@@ -399,3 +399,8 @@ void getFPI(double &_fpi[][7], string &_ring[][3])
         }
     }
 }
+
+void logAccountInfo2Db()
+{
+    
+}
