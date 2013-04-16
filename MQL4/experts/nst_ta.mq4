@@ -616,7 +616,7 @@ void DB_createTables(int _dbconnid, string _fpit, string _tholdt)
         "`ringidx` tinyint(4) NULL DEFAULT NULL ,",
         "`lthold`  float(8,7) NULL DEFAULT NULL ,",
         "`sthold`  float(8,7) NULL DEFAULT NULL ,",
-        "UNIQUE INDEX `idx_ringidx` (`ringidx`) USING BTREE "
+        "UNIQUE INDEX `idx_ringidx` (`ringidx`) USING BTREE ",
         ")",
         "ENGINE=MyISAM ",
         "DEFAULT CHARACTER SET=utf8 COLLATE=utf8_general_ci ",
