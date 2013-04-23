@@ -11,6 +11,8 @@
 #property copyright "Copyright ? 2013 Nerrsoft.com"
 #property link      "http://nerrsoft.com"
 
+#include <nst_public.mqh>
+
 int order[3];
 bool status[3];
 
@@ -18,14 +20,15 @@ double lots = 0;
 double clots = 0;
 
 bool closeall = false;
-bool fixorderc = false;
+bool fixorderc = true;
 
 
 int start()
 {
-    order[0] = 4538153;
-    order[1] = 4538154;
-    order[2] = 4538155;
+    order[0] = 7740040;
+    order[1] = 7740041;
+    order[2] = 7740044;
+    lots = 0.5;
 
     status[0] = false;
     status[1] = false;
@@ -34,6 +37,7 @@ int start()
     clots = lots * getOrderOpenPrice(order[1]);
     if(fixorderc==true)
         clots += getOrderOpenLots(order[2]) - (getOrderOpenLots(order[1]) * getOrderOpenPrice(order[1]));
+    //clots = D
 
     closeRing();
 
@@ -53,42 +57,63 @@ void closeRing()
             profit[i] = 0;
     }
 
-    for(int i = 0; i < 3; i ++)
+    for(i = 0; i < 3; i ++)
     {
+        closestatus = false;
         if(profit[i]>0 && status[i]==false)
-            closestatus = closeOrderByTicket(order[i]);
+        {
+            if(i==2)
+                closestatus = closeOrderByTicket(order[i], clots);
+            else
+                closestatus = closeOrderByTicket(order[i], lots);
 
-        if(closestatus==true)
-            status[i] = true;
-        else
-            closeRing();
+            if(closestatus==true)
+                status[i] = true;
+            else
+            {
+                outputLog("Close order[" + i + "] faild.");
+                closeRing();
+            }
+        }
     }
 
-    for(int i = 0; i < 3; i ++)
+    for(i = 0; i < 3; i ++)
     {
+        closestatus = false;
         if(status[i]==false)
-            closestatus = closeOrderByTicket(order[i]);
+        {
+            Alert(order[i]);
+            if(i==2)
+                closestatus = closeOrderByTicket(order[i], clots);
+            else
+                closestatus = closeOrderByTicket(order[i], lots);
 
-        if(closestatus==true)
-            status[i] = true;
-        else
-            closeRing();
+            if(closestatus==true)
+                status[i] = true;
+            else
+            {
+                outputLog("Close order[" + i + "]faild.");
+                closeRing();
+            }
+        }
     }
+
+    return(0);
 }
 
-bool closeOrderByTicket(int _t)
+bool closeOrderByTicket(int _t, double _l)
 {
     bool s;
 
     if(OrderSelect(_t, SELECT_BY_TICKET , MODE_TRADES)==true)
     {
         if (OrderType() == OP_BUY)  
-            s = OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_BID), 3);
+            s = OrderClose(OrderTicket(), _l, MarketInfo(OrderSymbol(), MODE_BID), 3);
         if (OrderType() == OP_SELL) 
-            s = OrderClose(OrderTicket(), OrderLots(), MarketInfo(OrderSymbol(), MODE_ASK), 3);
+            s = OrderClose(OrderTicket(), _l, MarketInfo(OrderSymbol(), MODE_ASK), 3);
     }
 
-    return s;
+    return(s);
 }
 
 double getOrderOpenPrice(int _t)
