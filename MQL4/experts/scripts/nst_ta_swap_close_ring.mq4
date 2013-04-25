@@ -37,7 +37,7 @@ int start()
     clots = lots * getOrderOpenPrice(order[1]);
     if(fixorderc==true)
         clots += getOrderOpenLots(order[2]) - (getOrderOpenLots(order[1]) * getOrderOpenPrice(order[1]));
-    //clots = D
+    clots = NormalizeDouble(clots, 2);
 
     closeRing();
 
