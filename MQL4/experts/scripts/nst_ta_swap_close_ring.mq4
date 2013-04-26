@@ -25,10 +25,10 @@ bool fixorderc = true;
 
 int start()
 {
-    order[0] = 7740040;
-    order[1] = 7740041;
-    order[2] = 7740044;
-    lots = 0.5;
+    order[0] = 4477221;
+    order[1] = 4477222;
+    order[2] = 4477223;
+    lots = 0.1;
 
     status[0] = false;
     status[1] = false;
@@ -71,7 +71,7 @@ void closeRing()
                 status[i] = true;
             else
             {
-                outputLog("Close order[" + i + "] faild.");
+                outputLog("Close order[" + order[i] + "]faild. [" + GetLastError() + "]");
                 closeRing();
             }
         }
@@ -92,11 +92,13 @@ void closeRing()
                 status[i] = true;
             else
             {
-                outputLog("Close order[" + i + "]faild.");
+                outputLog("Close order[" + order[i] + "]faild. [" + GetLastError() + "]");
                 closeRing();
             }
         }
     }
+
+    Alert("Done");
 
     return(0);
 }
