@@ -23,7 +23,12 @@ extern string   pass            = "911911";
 extern string   dbName          = "nst";
 extern int      port            = 3306;
 
+/*
+plan
+1. check order status - dose account has opened new order or closed some orders?
+2. log active order information to mysql database
 
+*/
 
 void start()
 {
