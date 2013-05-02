@@ -23,6 +23,9 @@ extern string   pass            = "911911";
 extern string   dbName          = "nst";
 extern int      port            = 3306;
 
+//-- account - mt account number; accountid - the id in mysql db;
+int account, accountid;
+
 /*
 plan
 1. check order status - dose account has opened new order or closed some orders?
@@ -40,6 +43,12 @@ void start()
         return (1);
     }
 
+    //-- get information
+    account = AccountNumber();
+    accountid = getAccountIdByAccountNum(dbConnectId, account);
+
+    checkOrder(dbConnectId, accountid);
+
 
 
 
@@ -48,6 +57,31 @@ void start()
     string currtime = TimeToStr(TimeLocal(),TIME_DATE|TIME_SECONDS);
     DB_logOrderInfo(db_name, db_ordertable, currtime, magicnum);
     DB_logAccountInfo(db_name, db_accounttable, currtime);*/
+}
+
+/*
+ * Main Funcs
+ */
+void checkOrder(int _dbconnid, int _aid)
+{
+    
+}
+
+void logInfo(int _dbconnid, int _aid)
+{
+
+}
+
+/*
+ * 
+ */
+int getAccountIdByAccountNum(int _dbconnid, int _an)
+{
+    string data[][1];
+    string query = "SELECT id FROM nst_sys_account WHERE accountnumber=" + _an;
+    int result = mysqlFetchArray(_dbconnid, query, data);
+
+    return(StrToInteger(data[0][0]));
 }
 
 
@@ -69,21 +103,7 @@ int DB_connectdb()
     return (result);
 }
 
-void DB_logFpi2DB(int _dbconnid, string _table, double _fpi[][8])
+void DB_close(int _dbconnid)
 {
-    string query = "INSERT INTO `" + _table + "` (ringidx, lfpi, sfpi, marketdate) VALUES ";
-    string marketdate = TimeToStr(TimeCurrent(), TIME_DATE|TIME_SECONDS);
-
-    for(int i = 1; i < ringnum; i++)
-    {
-        query = query + "(" + i + ", " + _fpi[i][1] + ", " + _fpi[i][3] + ", '" + marketdate + "'),";
-        
-    }
-    query = StringSubstr(query, 0, StringLen(query) - 1);
-    mysqlQuery(_dbconnid, query);
-}
-
-void DB_close()
-{
-    mysqlDeinit(dbConnectId);
+    mysqlDeinit(_dbconnid);
 }
