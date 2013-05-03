@@ -47,16 +47,12 @@ void start()
     account = AccountNumber();
     accountid = getAccountIdByAccountNum(dbConnectId, account);
 
+    //-- check order change
     checkOrder(dbConnectId, accountid);
 
 
-
-
-    /*db_name = db_name + AccountNumber() + ".db";
-
-    string currtime = TimeToStr(TimeLocal(),TIME_DATE|TIME_SECONDS);
-    DB_logOrderInfo(db_name, db_ordertable, currtime, magicnum);
-    DB_logAccountInfo(db_name, db_accounttable, currtime);*/
+    //-- close mysql connect
+    DB_close(dbConnectId);
 }
 
 /*
@@ -64,12 +60,25 @@ void start()
  */
 void checkOrder(int _dbconnid, int _aid)
 {
-    
+    //-- load order info in database
+
+    //-- load order info in metatrader
+
+    //-- log new opened order information to database
+
+    //-- log new closed order information to database
+
+    Alert(_aid);
+
 }
 
 void logInfo(int _dbconnid, int _aid)
 {
+    /*db_name = db_name + AccountNumber() + ".db";
 
+    string currtime = TimeToStr(TimeLocal(),TIME_DATE|TIME_SECONDS);
+    DB_logOrderInfo(db_name, db_ordertable, currtime, magicnum);
+    DB_logAccountInfo(db_name, db_accounttable, currtime);*/
 }
 
 /*
