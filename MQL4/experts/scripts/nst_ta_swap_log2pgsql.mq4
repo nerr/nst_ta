@@ -38,11 +38,11 @@ int start()
     account = AccountNumber();
     aid = getAccountIdByAccountNum(account);
 
+    //--
+    checkOrderChange(aid);
 
-
-
-
-
+    //--
+    logOrderInfo(aid);
     
 
     //-- exit script and close pgsql connection
@@ -53,7 +53,7 @@ int start()
 /*
  * Main Funcs
  */
-void checkOrder(int _dbconnid, int _aid)
+void checkOrderChange(int _aid)
 {
     //-- load order info in database
 
@@ -67,7 +67,7 @@ void checkOrder(int _dbconnid, int _aid)
 
 }
 
-void logInfo(int _aid)
+void logOrderInfo(int _aid)
 {
     /*db_name = db_name + AccountNumber() + ".db";
 
@@ -98,7 +98,7 @@ string getCurrTime()
     return(currtime);
 }
 
-//--
+//-- check sql result has error or not
 bool is_error(string str)
 {
     return(StringFind(str, "error") != -1);
