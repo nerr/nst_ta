@@ -8,14 +8,15 @@
 #include <nst_ta_public.mqh>
 //-- include pgsql wrapper
 #include <postgremql4.mqh>
-string g_db_ip_setting 			= "localhost";
-string g_db_port_setting 		= "5432";
-string g_db_user_setting 		= "postgres";
-string g_db_password_setting 	= "911911";
-string g_db_name_setting 		= "nst";
+string g_db_ip_setting          = "localhost";
+string g_db_port_setting        = "5432";
+string g_db_user_setting        = "postgres";
+string g_db_password_setting    = "911911";
+string g_db_name_setting        = "nst";
 
-//-- account - mt account number; accountid - the id in mysql db;
+//-- account - mt4 account number; accountid - the account id in database;
 int account, aid;
+int magicnumber = 701;
 
 /*
 plan
@@ -39,12 +40,11 @@ int start()
     aid = getAccountIdByAccountNum(account);
 
     //--
-    checkOrderChange(aid);
+    //checkOrderChange(aid);
 
     //--
-    logOrderInfo(aid);
+    logOrderInfo(aid, magicnumber);
     
-
     //-- exit script and close pgsql connection
     pmql_disconnect();
     return(0);
@@ -63,17 +63,36 @@ void checkOrderChange(int _aid)
 
     //-- log new closed order information to database
 
-    Alert(_aid);
+    //-- Alert(_aid);
 
 }
 
-void logOrderInfo(int _aid)
+void logOrderInfo(int _aid, int _mg)
 {
-    /*db_name = db_name + AccountNumber() + ".db";
+    string currtime = getCurrTime();
+    int ordertotal = OrdersTotal();
+    string query = "INSERT INTO nst_ta_swap_order_daily_settlement (accountid,orderticket,logdatetime,currentprice,profit,swap) VALUES ";
 
-    string currtime = TimeToStr(TimeLocal(),TIME_DATE|TIME_SECONDS);
-    DB_logOrderInfo(db_name, db_ordertable, currtime, magicnum);
-    DB_logAccountInfo(db_name, db_accounttable, currtime);*/
+    //-- order log
+    for(int i = 0; i < ordertotal; i++)
+    {
+        if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+        {
+            if(OrderMagicNumber() == _mg)
+            {
+                query = StringConcatenate(
+                    query,
+                    "(" + _aid + ", " + OrderTicket() + ", '" + currtime + "', " + OrderClosePrice() + ", " + OrderProfit() + ", " + OrderSwap() + "),"
+                );
+            }
+        }
+    }
+
+    query = StringSubstr(query, 0, StringLen(query) - 1);
+
+    string res = pmql_exec(query);
+
+    outputLog(res);
 }
 
 /*
