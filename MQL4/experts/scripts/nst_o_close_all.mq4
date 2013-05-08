@@ -10,7 +10,7 @@
 
 
 
-#property copyright "Copyright ? 2012 Nerrsoft.com"
+#property copyright "Copyright ? 2013 Nerrsoft.com"
 #property link      "http://nerrsoft.com"
 
 
