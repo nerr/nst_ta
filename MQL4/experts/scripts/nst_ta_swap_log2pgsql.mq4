@@ -42,8 +42,6 @@ int start()
     //--
     //checkOrderChange(aid, magicnumber);
 
-    test();
-
     //--
     //logOrderInfo(aid, magicnumber);
     
@@ -134,6 +132,7 @@ bool is_error(string str)
     return(StringFind(str, "error") != -1);
 }
 
+//-- trans string query result to an array
 void pmql_fetchArr(string _pgres, string &_data[][])
 {
     int es, vs; //equalsign, verticalsing
@@ -177,6 +176,7 @@ void pmql_fetchArr(string _pgres, string &_data[][])
     }
 }
 
+//-- fetch rows of a query
 int pmql_fetchRows(string _pgres)
 {
     int i = 0;
