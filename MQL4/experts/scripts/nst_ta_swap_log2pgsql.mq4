@@ -40,10 +40,12 @@ int start()
     aid = getAccountIdByAccountNum(account);
 
     //--
-    //checkOrderChange(aid);
+    //checkOrderChange(aid, magicnumber);
+
+    test();
 
     //--
-    logOrderInfo(aid, magicnumber);
+    //logOrderInfo(aid, magicnumber);
     
     //-- exit script and close pgsql connection
     pmql_disconnect();
@@ -53,18 +55,27 @@ int start()
 /*
  * Main Funcs
  */
-void checkOrderChange(int _aid)
+void checkOrderChange(int _aid, int _mg)
 {
-    //-- load order info in database
+    //-- load order status in database (from `nst_ta_swap_order`)
+    //string query = "SELECT * FROM nst_ta_swap_order WHERE accountnumber=" + _an;
+    //string res = pmql_exec(query);
 
     //-- load order info in metatrader
+    for(int i = 0; i < OrdersHistoryTotal(); i++)
+    {
+        if(OrderSelect(i, SELECT_BY_POS, MODE_HISTORY))
+        {
+            if(OrderMagicNumber() == _mg)
+            {
+                outputLog(OrderTicket(),"Debug");
+            }
+        }
+    }
 
     //-- log new opened order information to database
 
     //-- log new closed order information to database
-
-    //-- Alert(_aid);
-
 }
 
 void logOrderInfo(int _aid, int _mg)
@@ -121,4 +132,96 @@ string getCurrTime()
 bool is_error(string str)
 {
     return(StringFind(str, "error") != -1);
+}
+
+void pmql_fetchArr(string _pgres, string &_data[][])
+{
+    int es, vs; //equalsign, verticalsing
+    int size = ArrayRange(_data, 1);
+    int i = 0;
+    int ii = 0;
+    int digi;
+
+    ArrayResize(_data, pmql_fetchRows(_pgres));
+    string res;
+    _pgres = "*" + _pgres;
+
+    while(StringFind(_pgres, "*", 0) == 0)
+    {
+        res = StringSubstr(_pgres, 0, StringFind(_pgres, "*", 1));
+
+        for(ii = 0; ii < size; ii++)
+        {
+            //outputLog(i + "->" + ii);
+
+            es = StringFind(res, "=", vs);
+            vs = StringFind(res, "|", es);
+
+            if(es+1==vs)
+                _data[i,ii] = "";
+            else if(es>0 && vs==-1)
+                _data[i,ii] = StringSubstr(res, es+1, -1);
+            else
+                _data[i,ii] = StringSubstr(res, es+1, vs-es-1);
+        }
+
+        digi = StringFind(_pgres, "*", 1);
+
+        if(digi == -1)
+            break;
+        else
+        {
+            _pgres = StringSubstr(_pgres, digi, StringLen(_pgres)-1);
+            i++;
+        }
+    }
+}
+
+int pmql_fetchRows(string _pgres)
+{
+    int i = 0;
+    int digi = 0;
+    _pgres = "*" + _pgres;
+
+    while(StringFind(_pgres, "*", 0) == 0)
+    {
+        i++;
+        digi = StringFind(_pgres, "*", 1);
+
+        if(digi == -1)
+            break;
+        else
+            _pgres = StringSubstr(_pgres, digi, StringLen(_pgres)-1);
+    }
+
+    return(i);
+}
+
+
+void test()
+{
+    string data[,6];
+
+    string query = "SELECT * FROM nst_sys_user";
+    string res = pmql_exec(query);
+    pmql_fetchArr(res, data);
+
+    outputLog(data[0,0]);
+    outputLog(data[0,1]);
+    outputLog(data[0,2]);
+    outputLog(data[0,3]);
+    outputLog(data[0,4]);
+    outputLog(data[0,5]);
+    outputLog(data[1,0]);
+    outputLog(data[1,1]);
+    outputLog(data[1,2]);
+    outputLog(data[1,3]);
+    outputLog(data[1,4]);
+    outputLog(data[1,5]);
+    outputLog(data[2,0]);
+    outputLog(data[2,1]);
+    outputLog(data[2,2]);
+    outputLog(data[2,3]);
+    outputLog(data[2,4]);
+    outputLog(data[2,5]);
 }
