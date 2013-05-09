@@ -196,32 +196,3 @@ int pmql_fetchRows(string _pgres)
 
     return(i);
 }
-
-
-void test()
-{
-    string data[,6];
-
-    string query = "SELECT * FROM nst_sys_user";
-    string res = pmql_exec(query);
-    pmql_fetchArr(res, data);
-
-    outputLog(data[0,0]);
-    outputLog(data[0,1]);
-    outputLog(data[0,2]);
-    outputLog(data[0,3]);
-    outputLog(data[0,4]);
-    outputLog(data[0,5]);
-    outputLog(data[1,0]);
-    outputLog(data[1,1]);
-    outputLog(data[1,2]);
-    outputLog(data[1,3]);
-    outputLog(data[1,4]);
-    outputLog(data[1,5]);
-    outputLog(data[2,0]);
-    outputLog(data[2,1]);
-    outputLog(data[2,2]);
-    outputLog(data[2,3]);
-    outputLog(data[2,4]);
-    outputLog(data[2,5]);
-}
