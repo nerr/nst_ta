@@ -43,7 +43,7 @@ int start()
     //checkOrderChange(aid, magicnumber);
 
     //--
-    //logOrderInfo(aid, magicnumber);
+    logOrderInfo(aid, magicnumber);
     
     //-- exit script and close pgsql connection
     pmql_disconnect();
@@ -55,12 +55,10 @@ int start()
  */
 void checkOrderChange(int _aid, int _mg)
 {
-    //-- load order status in database (from `nst_ta_swap_order`)
-    //string query = "SELECT * FROM nst_ta_swap_order WHERE accountnumber=" + _an;
-    //string res = pmql_exec(query);
+    int oht = OrdersHistoryTotal();
 
     //-- load order info in metatrader
-    for(int i = 0; i < OrdersHistoryTotal(); i++)
+    for(int i = 0; i < oht; i++)
     {
         if(OrderSelect(i, SELECT_BY_POS, MODE_HISTORY))
         {
@@ -79,8 +77,16 @@ void checkOrderChange(int _aid, int _mg)
 void logOrderInfo(int _aid, int _mg)
 {
     string currtime = getCurrTime();
+    string currdate = StringSubstr(currtime, 0, 10);
+    string query = "select id from nst_ta_swap_order_daily_settlement where accountid=" + _aid + " and logdatetime > '" + currdate + "'";
+    string res = pmql_exec(query);
+    if(StringLen(res)>0)
+    {
+        return(1);
+    }
+
     int ordertotal = OrdersTotal();
-    string query = "INSERT INTO nst_ta_swap_order_daily_settlement (accountid,orderticket,logdatetime,currentprice,profit,swap) VALUES ";
+    query = "INSERT INTO nst_ta_swap_order_daily_settlement (accountid,orderticket,logdatetime,currentprice,profit,swap) VALUES ";
 
     //-- order log
     for(int i = 0; i < ordertotal; i++)
@@ -99,9 +105,9 @@ void logOrderInfo(int _aid, int _mg)
 
     query = StringSubstr(query, 0, StringLen(query) - 1);
 
-    string res = pmql_exec(query);
+    res = pmql_exec(query);
 
-    outputLog(res);
+    return(0);
 }
 
 /*
@@ -151,8 +157,6 @@ void pmql_fetchArr(string _pgres, string &_data[][])
 
         for(ii = 0; ii < size; ii++)
         {
-            //outputLog(i + "->" + ii);
-
             es = StringFind(res, "=", vs);
             vs = StringFind(res, "|", es);
 
