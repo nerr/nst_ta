@@ -58,36 +58,60 @@ void checkOrderChange(int _aid, int _mg)
 
     //-- load history orders info in metatrader
     int otinmt[]; //-- order ticket in metatrader
-    int n; //-- the real size of otinmt array
+    int n = -1; //-- the real size of otinmt array
     int oht = OrdersHistoryTotal(); //-- order history total
     ArrayResize(otinmt, oht); //-- adjust otinmt array size but not final adjust
-    
-    for(i = 0; i < oht; i++)
+
+    if(oht > 0)
     {
-        if(OrderSelect(i, SELECT_BY_POS, MODE_HISTORY))
+        for(i = 0; i < oht; i++)
         {
-            if(OrderMagicNumber() == _mg)
+            if(OrderSelect(i, SELECT_BY_POS, MODE_HISTORY))
             {
-                otinmt[n] = OrderTicket();
-                n++;
+                if(OrderMagicNumber() == _mg)
+                {
+                    otinmt[n] = OrderTicket();
+                    n++;
+                }
             }
         }
+        ArrayResize(otinmt, n); //-- final resize
     }
-    ArrayResize(otinmt, n-1); //-- final resize
+    else
+    {
+        sendAlert("No history order find, maybe there is no closed order yet or the history period was set wrong.","Notifi<" + account + ">log2pgsql");
+    }
 
     //--load available orders info in db
     string sdata[,1];
     int idata[];
-    string query = "select orderticket from nst_ta_swap_order where orderstatus=0";
+    int rows = 0;
+    string query = "select orderticket from nst_ta_swap_order where orderstatus=1";
     string res = pmql_exec(query);
-    pmql_fetchArr(res, sdata);
-    int rows = ArraySize(sdata);
 
-    formatOrderArr(sdata, idata);
-
-    for(i = 0; i < rows; i++)
+    if(StringLen(res) > 0)
     {
-        //outputLog(idata[i], "Debug");
+        pmql_fetchArr(res, sdata);
+        rows = ArraySize(sdata);
+        outputLog(rows, "Debug");
+        formatOrderArr(sdata, idata);
+    }
+
+    if(rows == 0)
+    {
+        //-- update all array otinmt order ticket status to closed and update close information
+
+    }
+
+    if(n > 0 && rows > 0)
+    {
+        for(i = 0; i < n; i++)
+        {
+            if(!in_array(otinmt[i], idata))
+            {
+                //-- update otinmt[i] order ticket status to closed and update close information
+            }
+        }
     }
 
 
@@ -263,8 +287,6 @@ void formatOrderArr(string _sourcearr[][], int &_targetarr[])
     int itemnum = ArraySize(_sourcearr);
     ArrayResize(_targetarr, itemnum);
 
-    outputLog(itemnum, "Debug");
-
     if(itemnum > 0)
     {
         for(int i = 0; i < itemnum; i++)
@@ -272,4 +294,14 @@ void formatOrderArr(string _sourcearr[][], int &_targetarr[])
             _targetarr[i] = StrToInteger(_sourcearr[i][0]);
         }
     }
+}
+
+//Debug
+void arrdebug(int _arr[])
+{
+    string debugstr = "";
+    for(int i = 0; i < ArraySize(_arr); i++)
+        debugstr = debugstr + _arr[i] + "|";
+
+    outputLog(debugstr, "Debug-Array");
 }
