@@ -19,10 +19,9 @@ int account, aid;
 int magicnumber = 701;
 
 /*
-plan
-1. check order status - dose account has opened new order or closed some orders?
-2. log active order information to mysql database
-
+ * TODO
+ * 1. check order status - dose account has opened new order or closed some orders?
+ * [Done]2. log active order information to pgsql database
 */
 
 int start()
@@ -31,7 +30,7 @@ int start()
     string res = pmql_connect(g_db_ip_setting, g_db_port_setting, g_db_user_setting, g_db_password_setting, g_db_name_setting);
     if((res != "ok") && (res != "already connected"))
     {
-        outputLog("DB not connected!", "PostgreSQL ERROR");
+        outputLog("DB not connected!", "PGSQL-ERR");
         return (-1);
     }
 
@@ -40,7 +39,7 @@ int start()
     aid = getAccountIdByAccountNum(account);
 
     //--
-    //checkOrderChange(aid, magicnumber);
+    checkOrderChange(aid, magicnumber);
 
     //--
     logOrderInfo(aid, magicnumber);
@@ -55,19 +54,57 @@ int start()
  */
 void checkOrderChange(int _aid, int _mg)
 {
-    int oht = OrdersHistoryTotal();
+    int i,j;
 
-    //-- load order info in metatrader
-    for(int i = 0; i < oht; i++)
+    //-- load history orders info in metatrader
+    int otinmt[]; //-- order ticket in metatrader
+    int n; //-- the real size of otinmt array
+    int oht = OrdersHistoryTotal(); //-- order history total
+    ArrayResize(otinmt, oht); //-- adjust otinmt array size but not final adjust
+    
+    for(i = 0; i < oht; i++)
     {
         if(OrderSelect(i, SELECT_BY_POS, MODE_HISTORY))
         {
             if(OrderMagicNumber() == _mg)
             {
-                outputLog(OrderTicket(),"Debug");
+                otinmt[n] = OrderTicket();
+                n++;
             }
         }
     }
+    ArrayResize(otinmt, n-1); //-- final resize
+
+    //--load available orders info in db
+    string sdata[,1];
+    int idata[];
+    string query = "select orderticket from nst_ta_swap_order where orderstatus=0";
+    string res = pmql_exec(query);
+    pmql_fetchArr(res, sdata);
+    int rows = ArraySize(sdata);
+
+    formatOrderArr(sdata, idata);
+
+    for(i = 0; i < rows; i++)
+    {
+        //outputLog(idata[i], "Debug");
+    }
+
+
+    /*int ticket_cache;
+    for(j = 0; j < n; j++)
+    {
+        for(i = 0; i < rows; i++)
+        {
+            ticket_cache = StrToInteger(data[i][0]);
+
+            if(ticket_cache == otinmt[j])
+                break;
+
+            if(i+1==rows)
+                outputLog(ticket_cache + "is not in list", "Debug");
+        }
+    }*/
 
     //-- log new opened order information to database
 
@@ -113,6 +150,8 @@ void logOrderInfo(int _aid, int _mg)
 /*
  * 
  */
+
+//-- get the account id in db
 int getAccountIdByAccountNum(int _an)
 {
     string query = "SELECT id FROM nst_sys_account WHERE accountnumber=" + _an;
@@ -199,4 +238,38 @@ int pmql_fetchRows(string _pgres)
     }
 
     return(i);
+}
+
+
+/*
+ * sub funcs of checkOrderChange() 
+ */
+
+//-- check _needle in _array or not
+bool in_array(int _needle, int _array[])
+{
+    for(int i = 0; i < ArraySize(_array); i++)
+    {
+        if(_array[i] == _needle)
+            return(true);
+    }
+
+    return(false);
+}
+
+//-- format order array from 2 range to 1 range which query from pgsql and trans data type from string to int
+void formatOrderArr(string _sourcearr[][], int _targetarr[])
+{
+    int itemnum = ArraySize(_sourcearr);
+    ArrayResize(_targetarr, itemnum);
+
+    outputLog(itemnum, "Debug");
+
+    if(itemnum > 0)
+    {
+        for(int i = 0; i < itemnum; i++)
+        {
+            _targetarr[i] = StrToInteger(_sourcearr[i][0]);
+        }
+    }
 }
