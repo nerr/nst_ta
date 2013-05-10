@@ -258,7 +258,7 @@ bool in_array(int _needle, int _array[])
 }
 
 //-- format order array from 2 range to 1 range which query from pgsql and trans data type from string to int
-void formatOrderArr(string _sourcearr[][], int _targetarr[])
+void formatOrderArr(string _sourcearr[][], int &_targetarr[])
 {
     int itemnum = ArraySize(_sourcearr);
     ArrayResize(_targetarr, itemnum);
