@@ -296,7 +296,7 @@ void formatOrderArr(string _sourcearr[][], int &_targetarr[])
     }
 }
 
-//Debug
+//-- Debug array - print per item of an array
 void arrdebug(int _arr[])
 {
     string debugstr = "";
