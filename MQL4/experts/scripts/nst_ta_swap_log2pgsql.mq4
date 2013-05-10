@@ -110,6 +110,7 @@ void checkOrderChange(int _aid, int _mg)
             if(!in_array(otinmt[i], idata))
             {
                 //-- update otinmt[i] order ticket status to closed and update close information
+                update2closed(otinmt[i]);
             }
         }
     }
@@ -137,7 +138,7 @@ void checkOrderChange(int _aid, int _mg)
 
 void logOrderInfo(int _aid, int _mg)
 {
-    string currtime = getCurrTime();
+    string currtime = getTime(TimeLocal());
     string currdate = StringSubstr(currtime, 0, 10);
     string query = "select id from nst_ta_swap_order_daily_settlement where accountid=" + _aid + " and logdatetime > '" + currdate + "'";
     string res = pmql_exec(query);
@@ -185,15 +186,16 @@ int getAccountIdByAccountNum(int _an)
     return(id);
 }
 
-//-- get local time
-string getCurrTime()
+//-- get string time and format
+string getTime(datatime _t)
 {
-    string currtime = TimeToStr(TimeLocal(), TIME_DATE | TIME_SECONDS);
-    currtime = StringSetChar(currtime, 4, '-');
-    currtime = StringSetChar(currtime, 7, '-');
+    string strtime = TimeToStr(_t, TIME_DATE | TIME_SECONDS);
+    strtime = StringSetChar(strtime, 4, '-');
+    strtime = StringSetChar(strtime, 7, '-');
 
-    return(currtime);
+    return(strtime);
 }
+
 
 //-- check sql result has error or not
 bool is_error(string str)
@@ -295,6 +297,37 @@ void formatOrderArr(string _sourcearr[][], int &_targetarr[])
         }
     }
 }
+
+//-- update order status to closed to db by order ticket
+int update2closed(int _oid)
+{
+    if(!OrderSelect(_oid, SELECT_BY_TICKET, MODE_HISTORY))
+    {
+        outputLog("There was not find this history order [" + _oid + "], please check.", "Err");
+        return(1);
+    }
+
+    string closetime = getTime(OrderCloseTime());
+
+    string query = "UPDATE nst_ta_swap_order SET orderstatus=1, closedate=" + closetime + " , getswap=" + OrderSwap() + " , closeprice=" + OrderClosePrice() + " WHERE orderticket=" + _oid;
+    string res = pmql_exec(query);
+
+    if(is_error(is_error))
+        outputLog("update history order status error [" + _oid + "], please check.", "Err");
+
+    return(0);
+}
+
+
+
+
+
+
+
+
+
+
+
 
 //-- Debug array - print per item of an array
 void arrdebug(int _arr[])
