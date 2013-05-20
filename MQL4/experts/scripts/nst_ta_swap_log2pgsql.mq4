@@ -136,7 +136,7 @@ void checkOrderChange(int _aid, int _mg)
     //-- log new closed order information to database
 }
 
-void logOrderInfo(int _aid, int _mg)
+int logOrderInfo(int _aid, int _mg)
 {
     string currtime = getTime(TimeLocal());
     string currdate = StringSubstr(currtime, 0, 10);
@@ -172,6 +172,47 @@ void logOrderInfo(int _aid, int _mg)
     return(0);
 }
 
+//-- log swap rate to database
+int logSwapRate(int _aid)
+{
+    string _symbols[5];
+    _symbols[0] = "USDMXN";
+    _symbols[1] = "EURMXN";
+    _symbols[2] = "USDJPY";
+    _symbols[3] = "EURJPY";
+    _symbols[4] = "MXNJPY";
+
+    double _longswap, _shortswap;
+
+    string currtime = getTime(TimeLocal());
+    string currdate = StringSubstr(currtime, 0, 10);
+    string query = "select id from nst_ta_swap_rate where accountid=" + _aid + " and logdatetime > '" + currdate + "'";
+    string res = pmql_exec(query);
+    if(StringLen(res)>0)
+    {
+        return(1);
+    }
+
+    query = "INSERT INTO nst_ta_swap_rate (accountid,symbol,longswap,shortswap,logdatetime) VALUES ";
+
+    for(int i = 0; i < ArraySize(_symbols); i++)
+    {
+        _longswap  = MarketInfo(_symbols[i], MODE_SWAPLONG);
+        _shortswap = MarketInfo(_symbols[i], MODE_SWAPSHORT);
+
+        query = StringConcatenate(
+            query,
+            "(" + _aid + ", " + _symbols[i] + ", '" + _longswap + ", " + _shortswap + ", " + currtime + "),"
+        );
+    }
+
+    query = StringSubstr(query, 0, StringLen(query) - 1);
+
+    res = pmql_exec(query);
+
+    return(0);
+}
+
 /*
  * 
  */
@@ -187,7 +228,7 @@ int getAccountIdByAccountNum(int _an)
 }
 
 //-- get string time and format
-string getTime(datatime _t)
+string getTime(datetime _t)
 {
     string strtime = TimeToStr(_t, TIME_DATE | TIME_SECONDS);
     strtime = StringSetChar(strtime, 4, '-');
@@ -198,9 +239,9 @@ string getTime(datatime _t)
 
 
 //-- check sql result has error or not
-bool is_error(string str)
+bool is_error(string _str)
 {
-    return(StringFind(str, "error") != -1);
+    return(StringFind(_str, "error") != -1);
 }
 
 //-- trans string query result to an array
@@ -312,7 +353,7 @@ int update2closed(int _oid)
     string query = "UPDATE nst_ta_swap_order SET orderstatus=1, closedate=" + closetime + " , getswap=" + OrderSwap() + " , closeprice=" + OrderClosePrice() + " WHERE orderticket=" + _oid;
     string res = pmql_exec(query);
 
-    if(is_error(is_error))
+    if(is_error(res))
         outputLog("update history order status error [" + _oid + "], please check.", "Err");
 
     return(0);
