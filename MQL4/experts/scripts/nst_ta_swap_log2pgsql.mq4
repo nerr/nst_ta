@@ -43,6 +43,10 @@ int start()
 
     //--
     logOrderInfo(aid, magicnumber);
+
+
+    //--
+    logSwapRate(aid);
     
     //-- exit script and close pgsql connection
     pmql_disconnect();
@@ -202,11 +206,13 @@ int logSwapRate(int _aid)
 
         query = StringConcatenate(
             query,
-            "(" + _aid + ", " + _symbols[i] + ", '" + _longswap + ", " + _shortswap + ", " + currtime + "),"
+            "(" + _aid + ", '" + _symbols[i] + "', " + _longswap + ", " + _shortswap + ", '" + currtime + "'),"
         );
     }
 
     query = StringSubstr(query, 0, StringLen(query) - 1);
+
+    outputLog(query, "PGSQL");
 
     res = pmql_exec(query);
 
