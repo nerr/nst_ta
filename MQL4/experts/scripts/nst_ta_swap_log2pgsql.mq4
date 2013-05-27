@@ -42,11 +42,10 @@ int start()
     checkOrderChange(aid, magicnumber);
 
     //--
-    logOrderInfo(aid, magicnumber);
-
+    //logOrderInfo(aid, magicnumber);
 
     //--
-    logSwapRate(aid);
+    //logSwapRate(aid);
     
     //-- exit script and close pgsql connection
     pmql_disconnect();
@@ -62,7 +61,7 @@ void checkOrderChange(int _aid, int _mg)
 
     //-- load history orders info in metatrader
     int otinmt[]; //-- order ticket in metatrader
-    int n = -1; //-- the real size of otinmt array
+    int n = 0; //-- the real size of otinmt array
     int oht = OrdersHistoryTotal(); //-- order history total
     ArrayResize(otinmt, oht); //-- adjust otinmt array size but not final adjust
 
@@ -125,7 +124,7 @@ void checkOrderChange(int _aid, int _mg)
     {
         for(i = 0; i < rows; i++)
         {
-            ticket_cache = StrToInteger(data[i][0]);
+            ticket_cache = StrToInteger(idata[i][0]);
 
             if(ticket_cache == otinmt[j])
                 break;
@@ -356,24 +355,40 @@ int update2closed(int _oid)
 
     string closetime = getTime(OrderCloseTime());
 
-    string query = "UPDATE nst_ta_swap_order SET orderstatus=1, closedate=" + closetime + " , getswap=" + OrderSwap() + " , closeprice=" + OrderClosePrice() + " WHERE orderticket=" + _oid;
+    string query = "UPDATE nst_ta_swap_order SET orderstatus=1, closedate='" + closetime + "', getswap=" + OrderSwap() + ", closeprice=" + OrderClosePrice() + ", endprofit=" + OrderProfit() + " WHERE orderticket=" + _oid;
     string res = pmql_exec(query);
 
     if(is_error(res))
-        outputLog("update history order status error [" + _oid + "], please check.", "Err");
+    {
+        outputLog("update history order status error [" + _oid + "], please check. " + query, "Err");
+        insert2closed(_oid);
+    }
 
     return(0);
 }
 
+//-- insert order status to closed to db by order ticket
+int insert2closed(int _oid)
+{
+    if(!OrderSelect(_oid, SELECT_BY_TICKET, MODE_HISTORY))
+    {
+        outputLog("There was not find this history order [" + _oid + "], please check.", "Err");
+        return(1);
+    }
 
+    string closetime = getTime(OrderCloseTime());
+    string opentime = getTime(OrderOpenTime());
 
+    string query = "INSERT INTO nst_ta_swap_order (userid,orderticket,usemargin,opendate,orderstatus,closedate,getswap,ordertype,openprice,commission,closeprice,endprofit) VALUES (1," + _oid + ",0,'" + opentime + "',1,'" + closetime + "'," + OrderSwap() + "," + OrderType() + "," + OrderOpenPrice() + "," + OrderCommission() + "," + OrderClosePrice() + "," + OrderProfit() + ")";
+    string res = pmql_exec(query);
 
+    if(is_error(res))
+        outputLog("inster into closed order status error [" + _oid + "], please check. "+query, "Err");
+    else
+        outputLog("inster into closed order OK", "Status");
 
-
-
-
-
-
+    return(0);
+}
 
 
 //-- Debug array - print per item of an array
