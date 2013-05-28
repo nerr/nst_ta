@@ -330,11 +330,9 @@ void update2db(int _type, int _mg)
     {
         pmql_fetchArr(res, sdata);
         rows = ArraySize(sdata);
-        outputLog(rows, "Debug");
+        //outputLog(rows, "Debug");
         formatOrderArr(sdata, idata);
     }
-
-    arrdebug(idata);
 
     if(rows == 0)
     {
