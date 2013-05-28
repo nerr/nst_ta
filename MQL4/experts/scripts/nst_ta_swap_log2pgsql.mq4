@@ -38,13 +38,13 @@ int start()
     account = AccountNumber();
     aid = getAccountIdByAccountNum(account);
 
-    //--
+    //-- insert new opened order and new closed order into database
     checkOrderChange(aid, magicnumber);
 
-    //--
+    //-- log current order (available order) infarmation to database
     logOrderInfo(aid, magicnumber);
 
-    //--
+    //-- log swap rate date to database
     logSwapRate(aid);
     
     //-- exit script and close pgsql connection
@@ -91,9 +91,7 @@ int logOrderInfo(int _aid, int _mg)
             }
         }
     }
-
     query = StringSubstr(query, 0, StringLen(query) - 1);
-
     res = pmql_exec(query);
 
     return(0);
@@ -268,7 +266,7 @@ void formatOrderArr(string _sourcearr[][], int &_targetarr[])
     }
 }
 
-//--
+//-- insert new opened order and new closed order into database
 void update2db(int _type, int _mg)
 {
     int i;
@@ -288,7 +286,7 @@ void update2db(int _type, int _mg)
     {
         for(i = 0; i < ordertotal; i++)
         {
-            
+            //-- check closed order 
             if(_type == 1)
             {
                 if(OrderSelect(i, SELECT_BY_POS, MODE_HISTORY))
@@ -300,6 +298,7 @@ void update2db(int _type, int _mg)
                     }
                 }
             }
+            //-- check opened order 
             else if(_type == 0)
             {
                 if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
@@ -334,6 +333,7 @@ void update2db(int _type, int _mg)
         formatOrderArr(sdata, idata);
     }
 
+    //-- if no order in database
     if(rows == 0)
     {
         if(realticketnum > 0)
@@ -348,6 +348,7 @@ void update2db(int _type, int _mg)
         }
     }
 
+    //-- 
     if(realticketnum > 0 && rows > 0)
     {
         for(i = 0; i < realticketnum; i++)
@@ -412,6 +413,7 @@ int insert2closed(int _oid)
     return(0);
 }
 
+//-- insert new opened order to database;
 int insert2opened(int _oid)
 {
     if(!OrderSelect(_oid, SELECT_BY_TICKET, MODE_TRADES))
