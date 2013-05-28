@@ -378,7 +378,7 @@ int update2closed(int _oid)
 
     string closetime = getTime(OrderCloseTime());
 
-    string query = "UPDATE nst_ta_swap_order SET orderstatus=1, closedate='" + closetime + "', getswap=" + OrderSwap() + ", closeprice=" + OrderClosePrice() + ", endprofit=" + OrderProfit() + " WHERE orderticket=" + _oid;
+    string query = "UPDATE nst_ta_swap_order SET orderstatus=1, closedate='" + closetime + "', getswap=" + OrderSwap() + ", closeprice=" + OrderClosePrice() + ", endprofit=" + OrderProfit() + ",commission=" + OrderCommission() + " WHERE orderticket=" + _oid;
     string res = pmql_exec(query);
 
     if(is_error(res))
