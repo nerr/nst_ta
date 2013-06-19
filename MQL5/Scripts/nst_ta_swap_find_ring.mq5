@@ -2,7 +2,7 @@
 #property link        "http://nerrsoft.com"
 #property version     "1.00"
 #property description "Nerr Smart Trader"
-#property description "Triangular Arbitrage Trading System For MQ5."
+#property description "Member of Triangular Arbitrage Trading System For MQ5."
 #property description "https://github.com/nerr/nst_ta"
 #property description " "
 #property description "By Leon Zhuang "
@@ -14,11 +14,13 @@ CSymbolInfo *s0 = new CSymbolInfo();
 CSymbolInfo *s1 = new CSymbolInfo();
 CSymbolInfo *s2 = new CSymbolInfo();
 CSymbolInfo *ss = new CSymbolInfo();
-string  Ring[][4];
+
+//-- 
+string  Ring[][3];
 
 //-- controler
-double  swapmorethan = 5;
-bool    enabletrade = false;
+double  swapmorethan = 9;
+bool    enabletrade = true;
 bool    checkusedmargin = false;
 double  lots = 1.0;
 int     magicnumber = 701;
@@ -26,10 +28,10 @@ string  comm = "test";
 
 void OnStart()
 {
+    //-- get avaliable rings
     R_getRings(Ring);
+    //-- get rings number
     int RingNum = ArrayRange(Ring, 0);
-    
-    N_outputLog(Ring[17][0] + "|" + Ring[17][1] + "|" + Ring[17][2] + "|" + Ring[17][3]);
     
     int i,direction;
     string discomm;
@@ -38,7 +40,8 @@ void OnStart()
     
     for(i = 0; i < RingNum; i++)
     {
-        getringswap(i, ringswap);
+        //-- get swap total of a ring
+        R_getringswap(i, ringswap);
         //--
         
         if(ringswap[0] > swapmorethan || ringswap[1] > swapmorethan)
@@ -47,7 +50,7 @@ void OnStart()
                 + "[" + Ring[i][0] + "]" + "[" + Ring[i][1] + "]" + "[" + Ring[i][2] + "]";
             if(ringswap[0] > swapmorethan)
             {
-                ringmargin = calcuRingMargin(0, lots, i);
+                ringmargin = R_calcuRingMargin(0, lots, i);
                 ringmarginlevel = ringmargin / ringswap[0];
                 discomm = discomm + " <Long>[" + DoubleToString(ringswap[0], 2) + "]";
                 sumswap += ringswap[0];
@@ -56,7 +59,7 @@ void OnStart()
             }
             else if(ringswap[1] > swapmorethan)
             {
-                ringmargin = calcuRingMargin(1, lots, i);
+                ringmargin = R_calcuRingMargin(1, lots, i);
                 ringmarginlevel = ringmargin / ringswap[1];
                 discomm = discomm + " <Short>[" + DoubleToString(ringswap[1], 2) + "]";
                 
@@ -88,7 +91,7 @@ void OnStart()
     Comment(discomm);
 }
 
-double calcuRingMargin(int _d, double _l, int _i)
+double R_calcuRingMargin(int _d, double _l, int _i)
 {
     double checkmargin = 0;
     double freemargin = AccountInfoDouble(ACCOUNT_FREEMARGIN);
@@ -111,52 +114,56 @@ double calcuRingMargin(int _d, double _l, int _i)
 }
 
 
-void getringswap(int _i, double &_rs[])
+void R_getringswap(int _i, double &_rs[])
 {
     s0.Name(Ring[_i][0]);
     s1.Name(Ring[_i][1]);
     s2.Name(Ring[_i][2]);
     
     _rs[0]  = s0.SwapLong();
-    _rs[0] += s1.SwapShort() / SymbolInfoDouble(Ring[_i][1], SYMBOL_ASK);
-    _rs[0] += s2.SwapShort() * SymbolInfoDouble(Ring[_i][1], SYMBOL_ASK) / SymbolInfoDouble(Ring[_i][0], SYMBOL_ASK);
+    _rs[0] += s1.SwapShort() / SymbolInfoDouble(Ring[_i][1], SYMBOL_BID);
+    _rs[0] += s2.SwapShort() * SymbolInfoDouble(Ring[_i][1], SYMBOL_BID) / SymbolInfoDouble(Ring[_i][0], SYMBOL_BID);
     
     _rs[1]  = s0.SwapShort();
-    _rs[1] += s1.SwapLong() / SymbolInfoDouble(Ring[_i][1], SYMBOL_BID);
-    _rs[1] += s2.SwapLong() * SymbolInfoDouble(Ring[_i][1], SYMBOL_BID) / SymbolInfoDouble(Ring[_i][0], SYMBOL_BID);
+    _rs[1] += s1.SwapLong() / SymbolInfoDouble(Ring[_i][1], SYMBOL_ASK);
+    _rs[1] += s2.SwapLong() * SymbolInfoDouble(Ring[_i][1], SYMBOL_ASK) / SymbolInfoDouble(Ring[_i][0], SYMBOL_ASK);
     
-    string ms = "";
-    ms = StringSubstr(Ring[_i][0], 0, 3);
+    //-- get main currency
+    string mc = "";
+    mc = StringSubstr(Ring[_i][0], 0, 3);
     
-    if(ms=="AUD")
+    if(mc=="AUD")
     {
         _rs[0] = _rs[0] * SymbolInfoDouble("AUDUSD", SYMBOL_BID);
         _rs[1] = _rs[1] * SymbolInfoDouble("AUDUSD", SYMBOL_ASK);
     }
-    else if(ms=="EUR")
+    else if(mc=="EUR")
     {
         _rs[0] = _rs[0] * SymbolInfoDouble("EURUSD", SYMBOL_BID);
         _rs[1] = _rs[1] * SymbolInfoDouble("EURUSD", SYMBOL_ASK);
     }
-    else if(ms=="GBP")
+    else if(mc=="GBP")
     {
         _rs[0] = _rs[0] * SymbolInfoDouble("GBPUSD", SYMBOL_BID);
         _rs[1] = _rs[1] * SymbolInfoDouble("GBPUSD", SYMBOL_ASK);
     }
-    else if(ms=="NZD")
+    else if(mc=="NZD")
     {
         _rs[0] = _rs[0] * SymbolInfoDouble("NZDUSD", SYMBOL_BID);
         _rs[1] = _rs[1] * SymbolInfoDouble("NZDUSD", SYMBOL_ASK);
     }
-    else if(ms=="CAD")
+    else if(mc=="CAD")
     {
         _rs[0] = _rs[0] / SymbolInfoDouble("USDCAD", SYMBOL_BID);
         _rs[1] = _rs[1] / SymbolInfoDouble("USDCAD", SYMBOL_ASK);
     }
 }
 
+/*
+ * Ring function
+ */
 
-void R_getRings(string &_ring[][4])
+void R_getRings(string &_ring[][3])
 {
     string symbols[], symext;
     
@@ -269,60 +276,7 @@ double calcuSwap(int _d, string _s, double _l) //--
 }
 
 
-ENUM_SYMBOL_INFO_DOUBLE O_getSymbolAction(int _idx)
-{
-   switch(_idx)
-   {
-      case(9):return(SYMBOL_BID);
-      case(10):return(SYMBOL_ASK);
-      case(18):return(SYMBOL_SWAP_LONG);
-      case(19):return(SYMBOL_SWAP_SHORT);
-      
-      /*case(0):return(SYMBOL_BID);
-      case(1):return(SYMBOL_BIDHIGH);
-      case(2):return(SYMBOL_BIDLOW);
-      case(3):return(SYMBOL_ASK);
-      case(4):return(SYMBOL_ASKHIGH);
-      case(5):return(SYMBOL_ASKLOW);
-      case(6):return(SYMBOL_LAST);
-      case(7):return(SYMBOL_LASTHIGH);
-      case(8):return(SYMBOL_LASTLOW);
-      case(9):return(SYMBOL_POINT);
-      case(10):return(SYMBOL_TRADE_TICK_VALUE);
-      case(11):return(SYMBOL_TRADE_TICK_VALUE_PROFIT);
-      case(12):return(SYMBOL_TRADE_TICK_VALUE_LOSS);
-      case(13):return(SYMBOL_TRADE_TICK_SIZE);
-      case(14):return(SYMBOL_TRADE_CONTRACT_SIZE);
-      case(15):return(SYMBOL_VOLUME_MIN);
-      case(16):return(SYMBOL_VOLUME_MAX);
-      case(17):return(SYMBOL_VOLUME_STEP);
-      case(18):return(SYMBOL_VOLUME_LIMIT);
-      case(19):return(SYMBOL_SWAP_LONG);
-      case(20):return(SYMBOL_SWAP_SHORT);
-      case(21):return(SYMBOL_MARGIN_INITIAL);
-      case(22):return(SYMBOL_MARGIN_MAINTENANCE);
-      case(23):return(SYMBOL_MARGIN_LONG);
-      case(24):return(SYMBOL_MARGIN_SHORT);
-      case(25):return(SYMBOL_MARGIN_LIMIT);
-      case(26):return(SYMBOL_MARGIN_STOP);
-      case(27):return(SYMBOL_MARGIN_STOPLIMIT);
-      case(28):return(SYMBOL_SESSION_VOLUME);
-      case(29):return(SYMBOL_SESSION_TURNOVER);
-      case(30):return(SYMBOL_SESSION_INTEREST);
-      case(31):return(SYMBOL_SESSION_BUY_ORDERS_VOLUME);
-      case(32):return(SYMBOL_SESSION_SELL_ORDERS_VOLUME);
-      case(33):return(SYMBOL_SESSION_OPEN);
-      case(34):return(SYMBOL_SESSION_CLOSE);
-      case(35):return(SYMBOL_SESSION_AW);
-      case(36):return(SYMBOL_SESSION_PRICE_SETTLEMENT);
-      case(37):return(SYMBOL_SESSION_PRICE_LIMIT_MIN);
-      case(38):return(SYMBOL_SESSION_PRICE_LIMIT_MAX);*/
-   }
-   return(WRONG_VALUE);
-}
-
-
-bool O_openRing(int _direction, int _index, double &_price[], string _comment, string &_ring[][4], int _magicnumber, double _lots)
+bool O_openRing(int _direction, int _index, double &_price[], string _comment, string &_ring[][3], int _magicnumber, double _lots)
 {
     int b_c_direction, limit_direction, statuscode[3];
     
@@ -471,6 +425,13 @@ void N_pushInfo(string _text, string _type="Information")
     SendNotification(text);
 }
 
+
+
+
+/*
+ * get enum items
+ */
+
 //--
 ENUM_TRADE_REQUEST_ACTIONS O_getAction(int _idx)
 {
@@ -498,6 +459,58 @@ ENUM_ORDER_TYPE O_getType(int _idx)
       case(5):return(ORDER_TYPE_SELL_STOP);
       case(6):return(ORDER_TYPE_BUY_STOP_LIMIT);
       case(7):return(ORDER_TYPE_SELL_STOP_LIMIT);
+   }
+   return(WRONG_VALUE);
+}
+
+ENUM_SYMBOL_INFO_DOUBLE O_getSymbolAction(int _idx)
+{
+   switch(_idx)
+   {
+      case(9):return(SYMBOL_BID);
+      case(10):return(SYMBOL_ASK);
+      case(18):return(SYMBOL_SWAP_LONG);
+      case(19):return(SYMBOL_SWAP_SHORT);
+      
+      /*case(0):return(SYMBOL_BID);
+      case(1):return(SYMBOL_BIDHIGH);
+      case(2):return(SYMBOL_BIDLOW);
+      case(3):return(SYMBOL_ASK);
+      case(4):return(SYMBOL_ASKHIGH);
+      case(5):return(SYMBOL_ASKLOW);
+      case(6):return(SYMBOL_LAST);
+      case(7):return(SYMBOL_LASTHIGH);
+      case(8):return(SYMBOL_LASTLOW);
+      case(9):return(SYMBOL_POINT);
+      case(10):return(SYMBOL_TRADE_TICK_VALUE);
+      case(11):return(SYMBOL_TRADE_TICK_VALUE_PROFIT);
+      case(12):return(SYMBOL_TRADE_TICK_VALUE_LOSS);
+      case(13):return(SYMBOL_TRADE_TICK_SIZE);
+      case(14):return(SYMBOL_TRADE_CONTRACT_SIZE);
+      case(15):return(SYMBOL_VOLUME_MIN);
+      case(16):return(SYMBOL_VOLUME_MAX);
+      case(17):return(SYMBOL_VOLUME_STEP);
+      case(18):return(SYMBOL_VOLUME_LIMIT);
+      case(19):return(SYMBOL_SWAP_LONG);
+      case(20):return(SYMBOL_SWAP_SHORT);
+      case(21):return(SYMBOL_MARGIN_INITIAL);
+      case(22):return(SYMBOL_MARGIN_MAINTENANCE);
+      case(23):return(SYMBOL_MARGIN_LONG);
+      case(24):return(SYMBOL_MARGIN_SHORT);
+      case(25):return(SYMBOL_MARGIN_LIMIT);
+      case(26):return(SYMBOL_MARGIN_STOP);
+      case(27):return(SYMBOL_MARGIN_STOPLIMIT);
+      case(28):return(SYMBOL_SESSION_VOLUME);
+      case(29):return(SYMBOL_SESSION_TURNOVER);
+      case(30):return(SYMBOL_SESSION_INTEREST);
+      case(31):return(SYMBOL_SESSION_BUY_ORDERS_VOLUME);
+      case(32):return(SYMBOL_SESSION_SELL_ORDERS_VOLUME);
+      case(33):return(SYMBOL_SESSION_OPEN);
+      case(34):return(SYMBOL_SESSION_CLOSE);
+      case(35):return(SYMBOL_SESSION_AW);
+      case(36):return(SYMBOL_SESSION_PRICE_SETTLEMENT);
+      case(37):return(SYMBOL_SESSION_PRICE_LIMIT_MIN);
+      case(38):return(SYMBOL_SESSION_PRICE_LIMIT_MAX);*/
    }
    return(WRONG_VALUE);
 }
