@@ -291,7 +291,7 @@ void update2db(int _type, int _mg)
             {
                 if(OrderSelect(i, SELECT_BY_POS, MODE_HISTORY))
                 {
-                    if(OrderMagicNumber() == _mg)
+                    if(OrderMagicNumber() == _mg && (OrderType()==OP_BUY || OrderType()==OP_SELL))
                     {
                         ordertickets[realticketnum] = OrderTicket();
                         realticketnum++;
@@ -435,6 +435,26 @@ int insert2opened(int _oid)
     return(0);
 }
 
+//-- check order is in db
+bool checkOrdInDb(int _oid)
+{
+    string sdata[,1];
+    int idata[];
+    int rows = 0;
+    string query = "select orderticket from nst_ta_swap_order where orderstatus=1";
+    string res = pmql_exec(query);
+
+    if(StringLen(res) > 0)
+    {
+        pmql_fetchArr(res, sdata);
+        rows = ArraySize(sdata);
+        outputLog(rows, "Debug");
+        formatOrderArr(sdata, idata);
+    }
+
+
+}
+
 
 //-- Debug array - print per item of an array
 void arrdebug(int _arr[])
@@ -445,3 +465,4 @@ void arrdebug(int _arr[])
 
     outputLog(debugstr, "Debug-Array");
 }
+
