@@ -13,7 +13,7 @@
 
 
 
-#property copyright "Copyright ? 2012 Nerrsoft.com"
+#property copyright "Copyright ? 2013 Nerrsoft.com"
 #property link      "http://nerrsoft.com"
 
 #property indicator_chart_window
@@ -397,6 +397,10 @@ void getFPI(double &_fpi[][7], string &_ring[][3])
             _fpi[i][4] = _fpi[i][1]; //-- 
             _fpi[i][5] = _fpi[i][3]; //--
         }
+
+        if(_fpi[i][2] > 0.99965)
+            PlaySound("alert2.wav");
+
     }
 }
 
