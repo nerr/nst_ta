@@ -85,6 +85,12 @@ int start()
     //if(Hour()==0 && Minute()==0 && Seconds()==0){}
         //D_logOrderInfo();
     getFPI(FPI, Ring);
+    if(FPI[0][2]+FPI[1][2] > 0)
+    {
+        if((FPI[0][2]+FPI[1][2])/2 >= 0.99965)
+            PlaySound("alert2.wav");
+    }
+
     updateFpiInfo(FPI);
     updateAccountInfo();
     updateSwapInfo(Ring);
@@ -397,10 +403,6 @@ void getFPI(double &_fpi[][7], string &_ring[][3])
             _fpi[i][4] = _fpi[i][1]; //-- 
             _fpi[i][5] = _fpi[i][3]; //--
         }
-
-        if(_fpi[i][2] > 0.99965)
-            PlaySound("alert2.wav");
-
     }
 }
 
