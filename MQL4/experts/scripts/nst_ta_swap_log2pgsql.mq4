@@ -149,7 +149,7 @@ int getAccountIdByAccountNum(int _an)
 {
     string query = "SELECT id FROM nst_sys_account WHERE accountnumber=" + _an;
     string res = pmql_exec(query);
-    int id = StrToInteger(StringSubstr(res, 3, 1));
+    int id = StrToInteger(StringSubstr(res, 3, -1));
 
     return(id);
 }
@@ -317,6 +317,8 @@ void update2db(int _type, int _mg)
     {
         sendAlert("No order find, maybe there is no closed order yet or the history period was set wrong.","Notifi<" + account + ">log2pgsql");
     }
+    
+    //arrdebug(ordertickets);
 
     //-- load closed orders info from db
     string sdata[,1];
@@ -358,7 +360,10 @@ void update2db(int _type, int _mg)
                 for(i = 0; i < realticketnum; i++)
                 {
                     if(_type == 1)
+                    {
+                        Print(ordertickets[i]);
                         update2closed(ordertickets[i]);
+                    }
                     else if(_type == 0)
                         insert2opened(ordertickets[i]);
                 }
@@ -381,9 +386,11 @@ int update2closed(int _oid)
     string query = "UPDATE nst_ta_swap_order SET orderstatus=1, closedate='" + closetime + "', getswap=" + OrderSwap() + ", closeprice=" + OrderClosePrice() + ", endprofit=" + OrderProfit() + ",commission=" + OrderCommission() + " WHERE orderticket=" + _oid;
     string res = pmql_exec(query);
 
+    Print(query + " | " + res);
     if(is_error(res))
     {
         outputLog("update history order status error [" + _oid + "], please check. " + query, "Err");
+        
         insert2closed(_oid);
     }
 
@@ -435,26 +442,6 @@ int insert2opened(int _oid)
     return(0);
 }
 
-//-- check order is in db
-bool checkOrdInDb(int _oid)
-{
-    string sdata[,1];
-    int idata[];
-    int rows = 0;
-    string query = "select orderticket from nst_ta_swap_order where orderstatus=1";
-    string res = pmql_exec(query);
-
-    if(StringLen(res) > 0)
-    {
-        pmql_fetchArr(res, sdata);
-        rows = ArraySize(sdata);
-        outputLog(rows, "Debug");
-        formatOrderArr(sdata, idata);
-    }
-
-
-}
-
 
 //-- Debug array - print per item of an array
 void arrdebug(int _arr[])
@@ -465,4 +452,3 @@ void arrdebug(int _arr[])
 
     outputLog(debugstr, "Debug-Array");
 }
-
