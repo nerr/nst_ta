@@ -20,8 +20,13 @@
 
 //-- include mqh file
 #include <nst_ta_public.mqh>
-
-
+//-- include pgsql wrapper
+#include <postgremql4.mqh>
+string g_db_ip_setting          = "localhost";
+string g_db_port_setting        = "5432";
+string g_db_user_setting        = "postgres";
+string g_db_password_setting    = "911911";
+string g_db_name_setting        = "nst";
 
 /* 
  * define extern
@@ -46,11 +51,15 @@ int RingSpread[2];
 int orderTableX[6] = {25, 100, 200, 300, 400, 500};
 bool nottradesingal = false;
 
+//-- insert margin data to db var
+datetime tm;
+int std_t = 0;
+double test_swap, test_commission, test_pl;
+
 string SymbolArr[5] = {"USDJPY", "USDMXN", "MXNJPY", "EURJPY", "EURMXN"};
 
 
 int orderLine = 0;
-
 
 
 /* 
@@ -61,6 +70,14 @@ int orderLine = 0;
 //-- init
 int init()
 {
+    //-- begin script and connect to pgsql
+    string res = pmql_connect(g_db_ip_setting, g_db_port_setting, g_db_user_setting, g_db_password_setting, g_db_name_setting);
+    if((res != "ok") && (res != "already connected"))
+    {
+        outputLog("DB not connected!", "PGSQL-ERR");
+        return (-1);
+    }
+
     Ring[0][0] = "USDJPY"; Ring[0][1] = "USDMXN"; Ring[0][2] = "MXNJPY";
     Ring[1][0] = "EURJPY"; Ring[1][1] = "EURMXN"; Ring[1][2] = "MXNJPY";
 
@@ -76,6 +93,7 @@ int init()
 //-- deinit
 int deinit()
 {
+    pmql_disconnect();
     return(0);
 }
 
@@ -95,6 +113,9 @@ int start()
     updateAccountInfo();
     updateSwapInfo(Ring);
     updateOrderInfo(MagicNumber);
+
+    logSafeMarginTest2Db();
+    
     return(0);
 }
 
@@ -216,6 +237,11 @@ void updateOrderInfo(int _mn)
                 oinfo[idx][3] += OrderSwap();
 
                 oinfo[idx][4] += oinfo[idx][1] + oinfo[idx][2] + oinfo[idx][3];
+
+
+                test_pl += OrderProfit();
+                test_commission += OrderCommission();
+                test_swap += OrderSwap();
             }
         }
     }
@@ -406,7 +432,37 @@ void getFPI(double &_fpi[][7], string &_ring[][3])
     }
 }
 
-void logAccountInfo2Db()
+
+//-- log margin data to db
+void logSafeMarginTest2Db()
+{
+    tm = TimeCurrent();
+    if(std_t == 0)
+        std_t = tm;
+    else if(tm >= std_t)
+    {
+        std_t += 60;
+
+        string query = "insert into nst_ta_swap_safe_margin_note (logtime, profitloss, commission, accountnum, margin, freemargin, equity, swap, balance) values ('"+getTime(tm)+"', "+test_pl+", "+test_commission+", "+AccountNumber()+", "+AccountMargin()+", "+AccountFreeMargin()+", "+AccountEquity()+", "+test_swap+", "+AccountBalance()+")";
+        string res = pmql_exec(query);
+    }
+}
+
+//-- get string time and format
+string getTime(datetime _t)
+{
+    string strtime = TimeToStr(_t, TIME_DATE | TIME_SECONDS);
+    strtime = StringSetChar(strtime, 4, '-');
+    strtime = StringSetChar(strtime, 7, '-');
+
+    return(strtime);
+}
+
+
+
+
+/*void logAccountInfo2Db()
 {
     
-}
+}*/
+
