@@ -115,7 +115,7 @@ int start()
     updateOrderInfo(MagicNumber);
 
     logSafeMarginTest2Db();
-    
+
     return(0);
 }
 
@@ -439,6 +439,8 @@ void logSafeMarginTest2Db()
     tm = TimeCurrent();
     if(std_t == 0)
         std_t = tm;
+    else if((tm - std_t) > 200)
+        std_t = tm;
     else if(tm >= std_t)
     {
         std_t += 60;
@@ -446,6 +448,12 @@ void logSafeMarginTest2Db()
         string query = "insert into nst_ta_swap_safe_margin_note (logtime, profitloss, commission, accountnum, margin, freemargin, equity, swap, balance) values ('"+getTime(tm)+"', "+test_pl+", "+test_commission+", "+AccountNumber()+", "+AccountMargin()+", "+AccountFreeMargin()+", "+AccountEquity()+", "+test_swap+", "+AccountBalance()+")";
         string res = pmql_exec(query);
     }
+
+
+    test_pl = 0;
+    test_commission = 0;
+    test_swap = 0;
+
 }
 
 //-- get string time and format
