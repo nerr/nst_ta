@@ -21,7 +21,7 @@ It is a arbitrage trading system for Metatrader 4/5 base on Triangular Arbitrage
 
 # Author
 
-My name is Leon, if you are interested in this project you can send email to me (leon#nerrsoft.com) or follow me on twitter (@nerrsoft).
+My name is Leon, if you interested in this repo you can send email to me (leon#nerrsoft.com) or follow me on twitter (@nerrsoft).
 
 - - -
 
