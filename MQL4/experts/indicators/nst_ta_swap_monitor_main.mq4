@@ -32,8 +32,8 @@ string g_db_name_setting        = "nst";
  * define extern
  *
  */
-extern int MagicNumber     = 701;
-
+extern int    MagicNumber     = 701;
+extern bool   LogMarginData   = false;
 
 
 /* 
@@ -113,8 +113,9 @@ int start()
     updateAccountInfo();
     updateSwapInfo(Ring);
     updateOrderInfo(MagicNumber);
-
-    logSafeMarginTest2Db();
+    
+    if(LogMarginData == true)
+        logSafeMarginTest2Db();
 
     return(0);
 }
