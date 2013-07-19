@@ -18,6 +18,10 @@
 
 #property indicator_chart_window
 
+//--
+#include <nst_lib_datetime.mqh>
+#include <nst_lib_debug.mqh>
+#include <nst_lib_visualization.mqh>
 
 
 //-- include pgsql wrapper
@@ -58,7 +62,6 @@ double test_swap, test_commission, test_pl;
 
 string SymbolArr[5] = {"USDJPY", "USDMXN", "MXNJPY", "EURJPY", "EURMXN"};
 
-
 int orderLine = 0;
 
 
@@ -74,7 +77,7 @@ int init()
     string res = pmql_connect(g_db_ip_setting, g_db_port_setting, g_db_user_setting, g_db_password_setting, g_db_name_setting);
     if((res != "ok") && (res != "already connected"))
     {
-        outputLog("DB not connected!", "PGSQL-ERR");
+        libDebugOutputLog("DB not connected!", "PGSQL-ERR");
         return (-1);
     }
 
@@ -131,16 +134,16 @@ void initDebugInfo(string _ring[][])
     int ringnum = ArrayRange(_ring, 0);
 
     //-- set background
-    createTextObj("_background", 15, 15, "g", C'0x27,0x28,0x22', "Webdings", 800);
+    libVisualCreateTextObj("_background", 15, 15, "g", C'0x27,0x28,0x22', "Webdings", 800);
 
     //-- set fpi table
     y += 15;
-    createTextObj("fpi_header", 25,    y, ">>> Rings(" + ringnum + ") & FPI", titlecolor);
+    libVisualCreateTextObj("fpi_header", 25,    y, ">>> Rings(" + ringnum + ") & FPI", titlecolor);
     y += 15;
     string fpiTableHeaderName[12] = {"Id", "SymbolA", "SymbolB", "SymbolC", "lFPI", "lLowest", "sFPI", "sHighest", "lThold", "sThold", "Spread", "MinSpread"};
     int    fpiTableHeaderX[12]    = {25, 50, 115, 181, 250, 325, 400, 475, 550, 625, 700, 775};
     for(i = 0; i < 12; i++)
-        createTextObj("fpi_header_col_" + i, fpiTableHeaderX[i], y, fpiTableHeaderName[i]);
+        libVisualCreateTextObj("fpi_header_col_" + i, fpiTableHeaderX[i], y, fpiTableHeaderName[i]);
 
     for(i = 0; i < ringnum; i ++)
     {
@@ -149,53 +152,53 @@ void initDebugInfo(string _ring[][])
         for (j = 0; j < 12; j ++) 
         {
             if(j == 0) 
-                createTextObj("fpi_body_row_" + (i) + "_col_" + (j), fpiTableHeaderX[j], y, (i+1), Gray);
+                libVisualCreateTextObj("fpi_body_row_" + (i) + "_col_" + (j), fpiTableHeaderX[j], y, (i+1), Gray);
             else if(j > 0 & j < 4) 
-                createTextObj("fpi_body_row_" + (i) + "_col_" + (j), fpiTableHeaderX[j], y, _ring[i][j-1], White);
+                libVisualCreateTextObj("fpi_body_row_" + (i) + "_col_" + (j), fpiTableHeaderX[j], y, _ring[i][j-1], White);
             else 
-                createTextObj("fpi_body_row_" + (i) + "_col_" + (j), fpiTableHeaderX[j], y);
+                libVisualCreateTextObj("fpi_body_row_" + (i) + "_col_" + (j), fpiTableHeaderX[j], y);
         }
     }
 
     //-- set swap table
     y += 15 * 2;
-    createTextObj("swap_header", 25, y, ">>> Swap Estimate (1 Lots) [SR/ODS]", titlecolor);
+    libVisualCreateTextObj("swap_header", 25, y, ">>> Swap Estimate (1 Lots) [SR/ODS]", titlecolor);
     int swapTableHeaderX[5] = {25, 50, 200, 350, 500};
     int swapTableValueX[7] = {50, 100, 200, 250, 350, 400, 500};
     for(i = 0; i < ringnum; i ++)
     {
         y += 15;
-        createTextObj("swap_header_row_" + i + "_col_0", swapTableHeaderX[0], y, (i+1), Gray);
+        libVisualCreateTextObj("swap_header_row_" + i + "_col_0", swapTableHeaderX[0], y, (i+1), Gray);
         for(j = 0; j < 3; j++)
-            createTextObj("swap_header_row_" + i + "_col_" + (j+1), swapTableHeaderX[j+1], y, _ring[i][j]);
-        createTextObj("swap_header_row_" + i + "_col_4", swapTableHeaderX[4], y, "Total");
+            libVisualCreateTextObj("swap_header_row_" + i + "_col_" + (j+1), swapTableHeaderX[j+1], y, _ring[i][j]);
+        libVisualCreateTextObj("swap_header_row_" + i + "_col_4", swapTableHeaderX[4], y, "Total");
 
         y += 15;
         for(j = 0; j < 7; j++)
-            createTextObj("swap_value_row_" + i + "_col_" + j, swapTableValueX[j], y, "", White);
+            libVisualCreateTextObj("swap_value_row_" + i + "_col_" + j, swapTableValueX[j], y, "", White);
     }
 
     //-- set account table
     y += 15 * 2;
-    createTextObj("account_header", 25, y, ">>> Account Info", titlecolor);
+    libVisualCreateTextObj("account_header", 25, y, ">>> Account Info", titlecolor);
     string accountTableName[5] = {"Balance", "Profit/Loss", "Equity", "Used Margin", "Free Margin"};
     int accountTableX[5] = {25, 100, 200, 300, 400};
     y += 15;
     for(i = 0; i < 5; i++)
     {
-        createTextObj("account_header_col_" + i, accountTableX[i], y, accountTableName[i]);
-        createTextObj("account_value_col_" + i, accountTableX[i], (y + 15), "", White);
+        libVisualCreateTextObj("account_header_col_" + i, accountTableX[i], y, accountTableName[i]);
+        libVisualCreateTextObj("account_value_col_" + i, accountTableX[i], (y + 15), "", White);
     }
 
     //-- set order table
     y += 15 * 3;
-    createTextObj("order_header", 25, y, ">>> Order Summary", titlecolor);
+    libVisualCreateTextObj("order_header", 25, y, ">>> Order Summary", titlecolor);
     string orderTableName[6] = {"Symbol", "Size(Lot)", "Profit/Loss", "Commission", "Swap", "Total"};
     
     y += 15;
     for(i = 0; i < 6; i++)
     {
-        createTextObj("order_header_col_" + i, orderTableX[i], y, orderTableName[i]);
+        libVisualCreateTextObj("order_header_col_" + i, orderTableX[i], y, orderTableName[i]);
     }
     orderLine = y;
 }
@@ -221,7 +224,6 @@ void updateOrderInfo(int _mn)
             ObjectDelete("order_summary_col_" + i);
     }
 
-    
     int idx;
     for(i = 0; i < OrdersTotal(); i++)
     {
@@ -252,10 +254,10 @@ void updateOrderInfo(int _mn)
         if(oinfo[i][0] > 0)
         {
             y += 15;
-            createTextObj(prefix + i + "_col_0", orderTableX[0], y, SymbolArr[i], White);
+            libVisualCreateTextObj(prefix + i + "_col_0", orderTableX[0], y, SymbolArr[i], White);
             for(j = 1; j < 6; j ++)
             {
-                createTextObj(prefix + i + "_col_" + j, orderTableX[j], y, DoubleToStr(oinfo[i][j-1], 2), White);
+                libVisualCreateTextObj(prefix + i + "_col_" + j, orderTableX[j], y, DoubleToStr(oinfo[i][j-1], 2), White);
                 sum[j-1] += oinfo[i][j-1];
             }
         }
@@ -264,14 +266,14 @@ void updateOrderInfo(int _mn)
     if(y > 255)
     {
         y += 15;
-        createTextObj("order_summary_col_0", 25, y, "Summary", C'0xd9,0x26,0x59');
+        libVisualCreateTextObj("order_summary_col_0", 25, y, "Summary", C'0xd9,0x26,0x59');
 
         for(i = 0; i < 5; i++)
         {
             if(sum[i] > 0)
-                createTextObj("order_summary_col_"+(i+1), orderTableX[i+1],y, DoubleToStr(sum[i], 2), DeepSkyBlue);
+                libVisualCreateTextObj("order_summary_col_"+(i+1), orderTableX[i+1],y, DoubleToStr(sum[i], 2), DeepSkyBlue);
             else
-                createTextObj("order_summary_col_"+(i+1), orderTableX[i+1],y, DoubleToStr(sum[i], 2), LightSeaGreen);
+                libVisualCreateTextObj("order_summary_col_"+(i+1), orderTableX[i+1],y, DoubleToStr(sum[i], 2), LightSeaGreen);
         }
     }
 
@@ -313,9 +315,9 @@ void updateSwapInfo(string &_ring[][3])
         for(int j = 0; j < 7; j++)
         {
             if(j==0 || j==2 || j==4)
-                setTextObj("swap_value_row_" + i + "_col_" + j, DoubleToStr(sinfo[j], 2), White);
+                libVisualSetTextObj("swap_value_row_" + i + "_col_" + j, DoubleToStr(sinfo[j], 2), White);
             else
-                setTextObj("swap_value_row_" + i + "_col_" + j, DoubleToStr(sinfo[j], 2), C'0xe6,0xdb,0x74');
+                libVisualSetTextObj("swap_value_row_" + i + "_col_" + j, DoubleToStr(sinfo[j], 2), C'0xe6,0xdb,0x74');
         }
     }
 }
@@ -330,9 +332,8 @@ void updateAccountInfo()
     ainfo[4] = AccountFreeMargin();
 
     for(int i = 0; i < 5; i++)
-        setTextObj("account_value_col_" + i, DoubleToStr(ainfo[i], 2), White);
+        libVisualSetTextObj("account_value_col_" + i, DoubleToStr(ainfo[i], 2), White);
 }
-
 
 void updateFpiInfo(double &_fpi[][7])
 {
@@ -349,31 +350,31 @@ void updateFpiInfo(double &_fpi[][7])
         spread += MarketInfo(Ring[i][1], MODE_SPREAD);
         spread += MarketInfo(Ring[i][2], MODE_SPREAD);
 
-        setTextObj(prefix + row + "_col_4", DoubleToStr(_fpi[i][0], digit), DeepSkyBlue);
-        setTextObj(prefix + row + "_col_5", DoubleToStr(_fpi[i][1], digit));
-        setTextObj(prefix + row + "_col_6", DoubleToStr(_fpi[i][2], digit), DeepSkyBlue);
-        setTextObj(prefix + row + "_col_7", DoubleToStr(_fpi[i][3], digit));
-        setTextObj(prefix + row + "_col_10", spread);
+        libVisualSetTextObj(prefix + row + "_col_4", DoubleToStr(_fpi[i][0], digit), DeepSkyBlue);
+        libVisualSetTextObj(prefix + row + "_col_5", DoubleToStr(_fpi[i][1], digit));
+        libVisualSetTextObj(prefix + row + "_col_6", DoubleToStr(_fpi[i][2], digit), DeepSkyBlue);
+        libVisualSetTextObj(prefix + row + "_col_7", DoubleToStr(_fpi[i][3], digit));
+        libVisualSetTextObj(prefix + row + "_col_10", spread);
         
         if(_fpi[i][4] > 0)
         {
-            setTextObj(prefix + row + "_col_8", DoubleToStr(_fpi[i][4], digit), C'0xe6,0xdb,0x74');
-            setTextObj(prefix + row + "_col_9", DoubleToStr(_fpi[i][5], digit), C'0xe6,0xdb,0x74');
+            libVisualSetTextObj(prefix + row + "_col_8", DoubleToStr(_fpi[i][4], digit), C'0xe6,0xdb,0x74');
+            libVisualSetTextObj(prefix + row + "_col_9", DoubleToStr(_fpi[i][5], digit), C'0xe6,0xdb,0x74');
         }
         else
         {
-            setTextObj(prefix + row + "_col_8", DoubleToStr(_fpi[i][4], digit));
-            setTextObj(prefix + row + "_col_9", DoubleToStr(_fpi[i][5], digit));
+            libVisualSetTextObj(prefix + row + "_col_8", DoubleToStr(_fpi[i][4], digit));
+            libVisualSetTextObj(prefix + row + "_col_9", DoubleToStr(_fpi[i][5], digit));
         }
         
         if(spread < RingSpread[i] || RingSpread[i] == 0)
             RingSpread[i] = spread;
 
         if(RingSpread[i] < 300 && nottradesingal == true)
-            sendAlert(Ring[i][1] + " can trade now!");
+            libDebugSendAlert(Ring[i][1] + " can trade now!");
 
         
-        setTextObj(prefix + row + "_col_11", RingSpread[i], C'0xe6,0xdb,0x74');
+        libVisualSetTextObj(prefix + row + "_col_11", RingSpread[i], C'0xe6,0xdb,0x74');
     }
 }
 
@@ -433,7 +434,6 @@ void getFPI(double &_fpi[][7], string &_ring[][3])
     }
 }
 
-
 //-- log margin data to db
 void logSafeMarginTest2Db()
 {
@@ -446,71 +446,13 @@ void logSafeMarginTest2Db()
     {
         std_t += 60;
 
-        string query = "insert into nst_ta_swap_safe_margin_note (logtime, profitloss, commission, accountnum, margin, freemargin, equity, swap, balance) values ('"+getTime(tm)+"', "+test_pl+", "+test_commission+", "+AccountNumber()+", "+AccountMargin()+", "+AccountFreeMargin()+", "+AccountEquity()+", "+test_swap+", "+AccountBalance()+")";
+        string query = "insert into nst_ta_swap_safe_margin_note (logtime, profitloss, commission, accountnum, margin, freemargin, equity, swap, balance) values ('"+libDatetimeTm2str(tm)+"', "+test_pl+", "+test_commission+", "+AccountNumber()+", "+AccountMargin()+", "+AccountFreeMargin()+", "+AccountEquity()+", "+test_swap+", "+AccountBalance()+")";
         string res = pmql_exec(query);
     }
-
 
     test_pl = 0;
     test_commission = 0;
     test_swap = 0;
-
-}
-
-//-- get string time and format
-string getTime(datetime _t)
-{
-    string strtime = TimeToStr(_t, TIME_DATE | TIME_SECONDS);
-    strtime = StringSetChar(strtime, 4, '-');
-    strtime = StringSetChar(strtime, 7, '-');
-
-    return(strtime);
-}
-
-
-
-//-- send print
-void outputLog(string _logtext, string _type="Information")
-{
-    string text = ">>>" + _type + ":" + _logtext;
-    Print(text);
-}
-
-//-- send notification
-void sendNotifi(string _logtext, string _type="Information")
-{
-    string text = ">>>" + _type + ":" + _logtext;
-    SendNotification(text);
-}
-
-//-- send alert
-void sendAlert(string _text = "null", string _type="Information")
-{
-    outputLog(_text, _type);
-    sendNotifi(_text, _type);
-    PlaySound("alert.wav");
-    Alert(_text);
-}
-
-//-- create text object
-void createTextObj(string objName, int xDistance, int yDistance, string objText="", color fontcolor=GreenYellow, string font="Courier New", int fontsize=9)
-{
-    if(ObjectFind(objName)<0)
-    {
-        ObjectCreate(objName, OBJ_LABEL, 0, 0, 0);
-        ObjectSetText(objName, objText, fontsize, font, fontcolor);
-        ObjectSet(objName, OBJPROP_XDISTANCE,   xDistance);
-        ObjectSet(objName, OBJPROP_YDISTANCE,   yDistance);
-    }
-}
-
-//-- set text object new value
-void setTextObj(string objName, string objText="", color fontcolor=White, string font="Courier New", int fontsize=9)
-{
-    if(ObjectFind(objName)>-1)
-    {
-        ObjectSetText(objName, objText, fontsize, font, fontcolor);
-    }
 }
 
 
