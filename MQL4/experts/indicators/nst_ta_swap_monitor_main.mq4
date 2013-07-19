@@ -18,8 +18,8 @@
 
 #property indicator_chart_window
 
-//-- include mqh file
-#include <nst_ta_public.mqh>
+
+
 //-- include pgsql wrapper
 #include <postgremql4.mqh>
 string g_db_ip_setting          = "localhost";
@@ -468,6 +468,50 @@ string getTime(datetime _t)
 }
 
 
+
+//-- send print
+void outputLog(string _logtext, string _type="Information")
+{
+    string text = ">>>" + _type + ":" + _logtext;
+    Print(text);
+}
+
+//-- send notification
+void sendNotifi(string _logtext, string _type="Information")
+{
+    string text = ">>>" + _type + ":" + _logtext;
+    SendNotification(text);
+}
+
+//-- send alert
+void sendAlert(string _text = "null", string _type="Information")
+{
+    outputLog(_text, _type);
+    sendNotifi(_text, _type);
+    PlaySound("alert.wav");
+    Alert(_text);
+}
+
+//-- create text object
+void createTextObj(string objName, int xDistance, int yDistance, string objText="", color fontcolor=GreenYellow, string font="Courier New", int fontsize=9)
+{
+    if(ObjectFind(objName)<0)
+    {
+        ObjectCreate(objName, OBJ_LABEL, 0, 0, 0);
+        ObjectSetText(objName, objText, fontsize, font, fontcolor);
+        ObjectSet(objName, OBJPROP_XDISTANCE,   xDistance);
+        ObjectSet(objName, OBJPROP_YDISTANCE,   yDistance);
+    }
+}
+
+//-- set text object new value
+void setTextObj(string objName, string objText="", color fontcolor=White, string font="Courier New", int fontsize=9)
+{
+    if(ObjectFind(objName)>-1)
+    {
+        ObjectSetText(objName, objText, fontsize, font, fontcolor);
+    }
+}
 
 
 /*void logAccountInfo2Db()
