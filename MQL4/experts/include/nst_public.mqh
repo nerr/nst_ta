@@ -8,6 +8,8 @@
  * 
  */
 
+#property library
+
 //-- send print
 void outputLog(string _logtext, string _type="Information")
 {
@@ -163,9 +165,7 @@ void setTextObj(string objName, string objText="", color fontcolor=White, string
 	}
 }
 
-#property copyright "Copyright © 2009, Ilnur"
-#property link      "http://www.metaquotes.net"
-#property library
+
 
 
 
