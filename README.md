@@ -11,12 +11,9 @@ It is a arbitrage trading system for Metatrader 4/5 base on Triangular Arbitrage
 
 * MQL5 - The trading system for Metatrader5 but not complete.
 
-* other - Report provider and MySQL script. Report provider code by PHP, it can auto generate excel report and it can run on CLI mode, so do not neet web server; MySQL script is a procedure use to make trading triger. **[No longer update]**
-
 ## Include Repo
 [postgremql4](https://github.com/kr0st/postgremql4)
-*Need install Microsoft Visual C++ 2010 Redistributable Package (x86) from here:
-http://www.microsoft.com/en-us/download/details.aspx?id=5555*
+*Need install Microsoft Visual C++ 2010 Redistributable Package (x86)*
 
 [sqlite3-mt4-wrapper](https://github.com/Shmuma/sqlite3-mt4-wrapper)
 
@@ -24,7 +21,7 @@ http://www.microsoft.com/en-us/download/details.aspx?id=5555*
 
 # Author
 
-My name is Leon, if you interested in this repo you can send email to me (leon#nerrsoft.com) or follow me on twitter (@nerrsoft).
+leon#nerrsoft.com
 
 - - -
 
