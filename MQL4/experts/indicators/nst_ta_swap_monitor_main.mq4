@@ -1,30 +1,19 @@
-/* Nerr Smart Trader - Triangular Arbitrage Trading System - Swap
+/* 
+ * Nerr Smart Trader - Triangular Arbitrage Trading System -> Swap
  *
  * By Leon Zhuang
  * Twitter @Nerrsoft
  * leon@nerrsoft.com
  * http://nerrsoft.com
- *  
- * @History
- * v0.0.0  [dev] 2012-12-11 init.
- *
- * @Todo
+ * 
  */
-
-
 
 #property copyright "Copyright ? 2013 Nerrsoft.com"
 #property link      "http://nerrsoft.com"
-
 #property indicator_chart_window
 
-//--
-#include <nst_lib_datetime.mqh>
-#include <nst_lib_debug.mqh>
-#include <nst_lib_visualization.mqh>
-
-
-//-- include pgsql wrapper
+//-- include library
+#include <nst_lib_all.mqh>
 #include <postgremql4.mqh>
 string g_db_ip_setting          = "localhost";
 string g_db_port_setting        = "5432";
@@ -33,7 +22,7 @@ string g_db_password_setting    = "911911";
 string g_db_name_setting        = "nst";
 
 /* 
- * define extern
+ * define input parameter
  *
  */
 extern int    MagicNumber     = 701;
@@ -46,8 +35,6 @@ extern bool   LogMarginData   = false;
  */
 
 string Ring[2, 3], SymExt;
-string db_name     = "D:\\Documents\\alpariukswaptest.db";
-string db_table    = "dayinfo";
 
 double FPI[2, 7];
 int RingNum = 2;
