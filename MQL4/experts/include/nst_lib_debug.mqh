@@ -1,41 +1,33 @@
-/* Nerr Smart Trader - Include - Public Functions
+/*
+ * Output Dubug/Alert/Notification Funcs
  *
- * By Leon Zhuang
- * Twitter @Nerrsoft
- * leon@nerrsoft.com
- * http://nerrsoft.com
- *
- * 
  */
 
-#property library
-
 //-- send print
-void outputLog(string _logtext, string _type="Information")
+void libDebugOutputLog(string _logtext, string _type="Information")
 {
-	string text = ">>>" + _type + ":" + _logtext;
-	Print(text);
+    string text = ">>>" + _type + ":" + _logtext;
+    Print(text);
 }
 
 //-- send notification
-void sendNotifi(string _logtext, string _type="Information")
+void libDebugSendNotifi(string _logtext, string _type="Information")
 {
-	string text = ">>>" + _type + ":" + _logtext;
-	SendNotification(text);
+    string text = ">>>" + _type + ":" + _logtext;
+    SendNotification(text);
 }
 
 //-- send alert
-void sendAlert(string _text = "null", string _type="Information")
+void libDebugSendAlert(string _text = "null", string _type="Information")
 {
-	outputLog(_text, _type);
-	sendNotifi(_text, _type);
-	PlaySound("alert.wav");
-	Alert(_text);
+    libDebugOutputLog(_text, _type);
+    libDebugSendNotifi(_text, _type);
+    PlaySound("alert.wav");
+    Alert(_text);
 }
 
-
 //-- desc error code to string
-string errorDescription(int _error)
+string libDebugErrDesc(int _error)
 {
 
 	string ErrorNumber;
@@ -143,124 +135,23 @@ string errorDescription(int _error)
 	return(ErrorNumber);
 }
 
-
-//-- create text object
-void createTextObj(string objName, int xDistance, int yDistance, string objText="", color fontcolor=GreenYellow, string font="Courier New", int fontsize=9)
+//-- Debug array - print per item of an array
+void libDebugArrDump(int _arr[])
 {
-	if(ObjectFind(objName)<0)
-	{
-		ObjectCreate(objName, OBJ_LABEL, 0, 0, 0);
-		ObjectSetText(objName, objText, fontsize, font, fontcolor);
-		ObjectSet(objName, OBJPROP_XDISTANCE,	xDistance);
-		ObjectSet(objName, OBJPROP_YDISTANCE, 	yDistance);
-	}
+    string debugstr = "";
+    for(int i = 0; i < ArraySize(_arr); i++)
+        debugstr = debugstr + _arr[i] + "|";
+
+    libDebugOutputLog(debugstr, "Debug-Array");
 }
 
-//-- set text object new value
-void setTextObj(string objName, string objText="", color fontcolor=White, string font="Courier New", int fontsize=9)
+bool libDebugInArr(int _needle, int _array[])
 {
-	if(ObjectFind(objName)>-1)
-	{
-		ObjectSetText(objName, objText, fontsize, font, fontcolor);
-	}
-}
+    for(int i = 0; i < ArraySize(_array); i++)
+    {
+        if(_array[i] == _needle)
+            return(true);
+    }
 
-
-
-
-
-int symbolsList(string &Symbols[], bool Selected)
-{
-   string SymbolsFileName;
-   int Offset, SymbolsNumber;
-   
-   if(Selected) SymbolsFileName = "symbols.sel";
-   else         SymbolsFileName = "symbols.raw";
-   
-   int hFile = FileOpenHistory(SymbolsFileName, FILE_BIN|FILE_READ);
-   if(hFile < 0) return(-1);
-
-   if(Selected) { SymbolsNumber = (FileSize(hFile) - 4) / 128; Offset = 116;  }
-   else         { SymbolsNumber = FileSize(hFile) / 1936;      Offset = 1924; }
-
-   ArrayResize(Symbols, SymbolsNumber);
-
-   if(Selected) FileSeek(hFile, 4, SEEK_SET);
-   
-   for(int i = 0; i < SymbolsNumber; i++)
-   {
-      Symbols[i] = FileReadString(hFile, 12);
-      FileSeek(hFile, Offset, SEEK_CUR);
-   }
-   
-   FileClose(hFile);
-   
-   return(SymbolsNumber);
-}
-
-
-
-
-string symbolDescription(string SymbolName)
-{
-   string SymbolDescription = "";
-   
-   int hFile = FileOpenHistory("symbols.raw", FILE_BIN|FILE_READ);
-   if(hFile < 0) return("");
-
-   int SymbolsNumber = FileSize(hFile) / 1936;
-
-   for(int i = 0; i < SymbolsNumber; i++)
-   {
-      if(FileReadString(hFile, 12) == SymbolName)
-      {
-         SymbolDescription = FileReadString(hFile, 64);
-         break;
-      }
-      FileSeek(hFile, 1924, SEEK_CUR);
-   }
-   
-   FileClose(hFile);
-   
-   return(SymbolDescription);
-}
-
-
-
-
-string symbolType(string SymbolName)
-{
-   int GroupNumber = -1;
-   string SymbolGroup = "";
-   
-   int hFile = FileOpenHistory("symbols.raw", FILE_BIN|FILE_READ);
-   if(hFile < 0) return("");
-      
-   int SymbolsNumber = FileSize(hFile) / 1936;
-      
-   for(int i = 0; i < SymbolsNumber; i++)
-   {
-      if(FileReadString(hFile, 12) == SymbolName)
-      {         
-         FileSeek(hFile, 1936*i + 100, SEEK_SET);
-         GroupNumber = FileReadInteger(hFile);
-         
-         break;
-      }
-      FileSeek(hFile, 1924, SEEK_CUR);
-   }
-   
-   FileClose(hFile);
-   
-   if(GroupNumber < 0) return("");
-      
-   hFile = FileOpenHistory("symgroups.raw", FILE_BIN|FILE_READ);
-   if(hFile < 0) return("");
-   
-   FileSeek(hFile, 80*GroupNumber, SEEK_SET);
-   SymbolGroup = FileReadString(hFile, 16);
-   
-   FileClose(hFile);
-   
-   return(SymbolGroup);
+    return(false);
 }

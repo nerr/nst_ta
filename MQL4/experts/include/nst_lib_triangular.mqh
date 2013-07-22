@@ -1,15 +1,3 @@
-/* Nerr Smart Trader - Include - Public Functions
- *
- * By Leon Zhuang
- * Twitter @Nerrsoft
- * leon@nerrsoft.com
- * http://nerrsoft.com
- *
- * 
- */
-
-#include <nst_public.mqh>
-
 //-- find available rings
 string findAvailableRing(string &_ring[][], string _currencies, string _symExt)
 {
@@ -100,10 +88,10 @@ bool openRing(int _direction, int _index, double _price[], double _fpi, string _
 			ticketno[1] = OrderSend(_ring[_index][1], _direction, _baselots, MarketInfo(_ring[_index][1], MODE_BID), 0, 0, 0, commentText, _magicnumber);
 	}
 	if(ticketno[1] > 0)
-		outputLog("nst_ta - First order opened. [" + _ring[_index][1] + "]", "Trading info");
+		libDebugOutputLog("nst_ta - First order opened. [" + _ring[_index][1] + "]", "Trading info");
 	else
 	{
-		outputLog("nst_ta - First order can not be send. cancel ring. [" + _ring[_index][1] + "][" + errorDescription(GetLastError()) + "]", "Trading error");
+		libDebugOutputLog("nst_ta - First order can not be send. cancel ring. [" + _ring[_index][1] + "][" + libDebugErrDesc(GetLastError()) + "]", "Trading error");
 		//-- exit openRing func
 		return(false);
 	}
@@ -119,18 +107,18 @@ bool openRing(int _direction, int _index, double _price[], double _fpi, string _
 			ticketno[2] = OrderSend(_ring[_index][2], _direction, _baselots, MarketInfo(_ring[_index][2], MODE_BID), 0, 0, 0, commentText, _magicnumber);
 	}
 	if(ticketno[2] > 0)
-		outputLog("nst_ta - Second order opened. [" + _ring[_index][2] + "]", "Trading info");
+		libDebugOutputLog("nst_ta - Second order opened. [" + _ring[_index][2] + "]", "Trading info");
 	else
 	{
-		outputLog("nst_ta - Second order can not be send. open limit order. [" + _ring[_index][2] + "][" + errorDescription(GetLastError()) + "]", "Trading error");
+		libDebugOutputLog("nst_ta - Second order can not be send. open limit order. [" + _ring[_index][2] + "][" + libDebugErrDesc(GetLastError()) + "]", "Trading error");
 
 		limit_direction = b_c_direction + 2;
 
 		ticketno[2] = OrderSend(_ring[_index][2], limit_direction, _baselots, _price[2], 0, 0, 0, _index + "#2" + commentText, _magicnumber);
 		if(ticketno[2] > 0)
-			outputLog("nst_ta - Second limit order opened. [" + _ring[_index][2] + "]", "Trading info");
+			libDebugOutputLog("nst_ta - Second limit order opened. [" + _ring[_index][2] + "]", "Trading info");
 		else
-			outputLog("nst_ta - Second limit order can not be send. [" + _ring[_index][2] + "][" + errorDescription(GetLastError()) + "]", "Trading error");
+			libDebugOutputLog("nst_ta - Second limit order can not be send. [" + _ring[_index][2] + "][" + libDebugErrDesc(GetLastError()) + "]", "Trading error");
 	}
 
 
@@ -144,18 +132,18 @@ bool openRing(int _direction, int _index, double _price[], double _fpi, string _
 			ticketno[3] = OrderSend(_ring[_index][3], _direction, c_lots, MarketInfo(_ring[_index][3], MODE_BID), 0, 0, 0, commentText, _magicnumber);
 	}
 	if(ticketno[3] > 0)
-		outputLog("nst_ta - Third order opened. [" + _ring[_index][3] + "]", "Trading info");
+		libDebugOutputLog("nst_ta - Third order opened. [" + _ring[_index][3] + "]", "Trading info");
 	else
 	{
-		outputLog("nst_ta - Third order can not be send. open limit order. [" + _ring[_index][3] + "][" + errorDescription(GetLastError()) + "]", "Trading error");
+		libDebugOutputLog("nst_ta - Third order can not be send. open limit order. [" + _ring[_index][3] + "][" + libDebugErrDesc(GetLastError()) + "]", "Trading error");
 
 		limit_direction = b_c_direction + 2;
 		
 		ticketno[3] = OrderSend(_ring[_index][3], limit_direction, c_lots, _price[3], 0, 0, 0, _index + "#3" + commentText, _magicnumber);
 		if(ticketno[3] > 0)
-			outputLog("nst_ta - Third limit order opened. [" + _ring[_index][3] + "]", "Trading info");
+			libDebugOutputLog("nst_ta - Third limit order opened. [" + _ring[_index][3] + "]", "Trading info");
 		else
-			outputLog("nst_ta - Third limit order can not be send. [" + _ring[_index][3] + "][" + errorDescription(GetLastError()) + "]", "Trading error");
+			libDebugOutputLog("nst_ta - Third limit order can not be send. [" + _ring[_index][3] + "][" + libDebugErrDesc(GetLastError()) + "]", "Trading error");
 	}
 
 	return(true);
@@ -177,7 +165,7 @@ void checkUnavailableSymbol(string _ring[][], string &_Ring[][], int _ringnum)
 			MarketInfo(_ring[i][j], MODE_ASK);
 			if(GetLastError() == 4106)
 			{
-				outputLog("This broker do not support symbol [" + _ring[i][j] + "]", "Information");
+				libDebugOutputLog("This broker do not support symbol [" + _ring[i][j] + "]", "Information");
 				break;
 			}
 			if(j==3) 
