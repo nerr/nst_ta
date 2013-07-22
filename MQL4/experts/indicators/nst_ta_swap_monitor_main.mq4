@@ -12,21 +12,31 @@
 #property link      "http://nerrsoft.com"
 #property indicator_chart_window
 
-//-- include library
+
+
+/* 
+ * include library
+ *
+ */
+
 #include <nst_lib_all.mqh>
 #include <postgremql4.mqh>
-string g_db_ip_setting          = "localhost";
-string g_db_port_setting        = "5432";
-string g_db_user_setting        = "postgres";
-string g_db_password_setting    = "911911";
-string g_db_name_setting        = "nst";
+
+
 
 /* 
  * define input parameter
  *
  */
-extern int    MagicNumber     = 701;
-extern bool   LogMarginData   = false;
+extern int    MagicNumber              = 701;
+extern bool   LogMarginData            = false;
+extern string DatabaseSettings         = "---PostgreSQL Database Settings---";
+extern string g_db_ip_setting          = "localhost";
+extern string g_db_port_setting        = "5432";
+extern string g_db_user_setting        = "postgres";
+extern string g_db_password_setting    = "911911";
+extern string g_db_name_setting        = "nst";
+
 
 
 /* 
@@ -35,21 +45,19 @@ extern bool   LogMarginData   = false;
  */
 
 string Ring[2, 3], SymExt;
-
+string SymbolArr[5] = {"USDJPY", "USDMXN", "MXNJPY", "EURJPY", "EURMXN"};
 double FPI[2, 7];
+bool nottradesingal = false;
 int RingNum = 2;
 int RingSpread[2];
 int orderTableX[6] = {25, 100, 200, 300, 400, 500};
-bool nottradesingal = false;
 
 //-- insert margin data to db var
+double test_swap, test_commission, test_pl;
 datetime tm;
 int std_t = 0;
-double test_swap, test_commission, test_pl;
-
-string SymbolArr[5] = {"USDJPY", "USDMXN", "MXNJPY", "EURJPY", "EURMXN"};
-
 int orderLine = 0;
+
 
 
 /* 
@@ -447,4 +455,3 @@ void logSafeMarginTest2Db()
 {
     
 }*/
-
