@@ -134,3 +134,24 @@ string libDebugErrDesc(int _error)
 	//---
 	return(ErrorNumber);
 }
+
+//-- Debug array - print per item of an array
+void libDebugArrDump(int _arr[])
+{
+    string debugstr = "";
+    for(int i = 0; i < ArraySize(_arr); i++)
+        debugstr = debugstr + _arr[i] + "|";
+
+    libDebugOutputLog(debugstr, "Debug-Array");
+}
+
+bool libDebugInArr(int _needle, int _array[])
+{
+    for(int i = 0; i < ArraySize(_array); i++)
+    {
+        if(_array[i] == _needle)
+            return(true);
+    }
+
+    return(false);
+}
