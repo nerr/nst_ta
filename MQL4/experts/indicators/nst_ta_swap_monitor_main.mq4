@@ -28,7 +28,9 @@
  * define input parameter
  *
  */
+
 extern int    MagicNumber              = 701;
+extern bool   LogPriceData             = true;
 extern bool   LogMarginData            = false;
 extern string DatabaseSettings         = "---PostgreSQL Database Settings---";
 extern string g_db_ip_setting          = "localhost";
@@ -57,6 +59,9 @@ double test_swap, test_commission, test_pl;
 datetime tm;
 int std_t = 0;
 int orderLine = 0;
+
+//-- log price info
+int account, aid;
 
 
 
@@ -114,6 +119,9 @@ int start()
     
     if(LogMarginData == true)
         logSafeMarginTest2Db();
+
+    if(LogPriceData == true)
+        logPriceInfo2Db();
 
     return(0);
 }
@@ -451,7 +459,299 @@ void logSafeMarginTest2Db()
 }
 
 
-/*void logAccountInfo2Db()
+
+void logPriceInfo2Db()
 {
+    //-- get account id
+    account = AccountNumber();
+    aid = getAccountIdByAccountNum(account);
+
+    //-- insert new opened order and new closed order into database
+    checkOrderChange(aid, magicnumber);
+
+    //-- log current order (available order) infarmation to database
+    logOrderInfo(aid, magicnumber);
+
+    //-- log swap rate date to database
+    logSwapRate(aid);
+}
+
+/*
+ * Main Funcs
+ */
+void checkOrderChange(int _aid, int _mg)
+{
+    //-- update new closed order to db
+    update2db(1, _mg);
+    //-- update new opened order to db
+    update2db(0, _mg);
+}
+
+int logOrderInfo(int _aid, int _mg)
+{
+    string currtime = libDatetimeTm2str(TimeLocal());
+    string currdate = StringSubstr(currtime, 0, 10);
+    string query = "select id from nst_ta_swap_order_daily_settlement where accountid=" + _aid + " and logdatetime > '" + currdate + "'";
+    string res = pmql_exec(query);
+    if(StringLen(res)>0)
+    {
+        return(1);
+    }
+
+    int ordertotal = OrdersTotal();
+    query = "INSERT INTO nst_ta_swap_order_daily_settlement (accountid,orderticket,logdatetime,currentprice,profit,swap) VALUES ";
+
+    //-- order log
+    for(int i = 0; i < ordertotal; i++)
+    {
+        if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+        {
+            if(OrderMagicNumber() == _mg)
+            {
+                query = StringConcatenate(
+                    query,
+                    "(" + _aid + ", " + OrderTicket() + ", '" + currtime + "', " + OrderClosePrice() + ", " + OrderProfit() + ", " + OrderSwap() + "),"
+                );
+            }
+        }
+    }
+    query = StringSubstr(query, 0, StringLen(query) - 1);
+    res = pmql_exec(query);
+
+    return(0);
+}
+
+//-- log swap rate to database
+int logSwapRate(int _aid)
+{
+    string _symbols[5];
+    _symbols[0] = "USDMXN";
+    _symbols[1] = "EURMXN";
+    _symbols[2] = "USDJPY";
+    _symbols[3] = "EURJPY";
+    _symbols[4] = "MXNJPY";
+
+    double _longswap, _shortswap;
+
+    string currtime = libDatetimeTm2str(TimeLocal());
+    string currdate = StringSubstr(currtime, 0, 10);
+    string query = "select id from nst_ta_swap_rate where accountid=" + _aid + " and logdatetime > '" + currdate + "'";
+    string res = pmql_exec(query);
+    if(StringLen(res)>0)
+    {
+        return(1);
+    }
+
+    query = "INSERT INTO nst_ta_swap_rate (accountid,symbol,longswap,shortswap,logdatetime) VALUES ";
+
+    for(int i = 0; i < ArraySize(_symbols); i++)
+    {
+        _longswap  = MarketInfo(_symbols[i], MODE_SWAPLONG);
+        _shortswap = MarketInfo(_symbols[i], MODE_SWAPSHORT);
+
+        query = StringConcatenate(
+            query,
+            "(" + _aid + ", '" + _symbols[i] + "', " + _longswap + ", " + _shortswap + ", '" + currtime + "'),"
+        );
+    }
+
+    query = StringSubstr(query, 0, StringLen(query) - 1);
+
+    //outputLog(query, "PGSQL");
+
+    res = pmql_exec(query);
+
+    return(0);
+}
+
+
+//-- format order array from 2 range to 1 range which query from pgsql and trans data type from string to int
+void formatOrderArr(string _sourcearr[][], int &_targetarr[])
+{
+    int itemnum = ArraySize(_sourcearr);
+    ArrayResize(_targetarr, itemnum);
+
+    if(itemnum > 0)
+    {
+        for(int i = 0; i < itemnum; i++)
+        {
+            _targetarr[i] = StrToInteger(_sourcearr[i][0]);
+        }
+    }
+}
+
+//-- insert new opened order and new closed order into database
+void update2db(int _type, int _mg)
+{
+    int i;
+    //-- load orders ticket from metatrader
+    int ordertickets[]; //-- order ticket in metatrader
+    int realticketnum = 0; //-- the real size of otinmt array
+    int ordertotal; //-- order history total
+    if(_type == 1)
+        ordertotal = OrdersHistoryTotal();
+    else if(_type == 0)
+        ordertotal = OrdersTotal();
+
+    //-- adjust otinmt array size but not final adjust
+    ArrayResize(ordertickets, ordertotal);
+
+    if(ordertotal > 0)
+    {
+        for(i = 0; i < ordertotal; i++)
+        {
+            //-- check closed order 
+            if(_type == 1)
+            {
+                if(OrderSelect(i, SELECT_BY_POS, MODE_HISTORY))
+                {
+                    if(OrderMagicNumber() == _mg && (OrderType()==OP_BUY || OrderType()==OP_SELL))
+                    {
+                        ordertickets[realticketnum] = OrderTicket();
+                        realticketnum++;
+                    }
+                }
+            }
+            //-- check opened order 
+            else if(_type == 0)
+            {
+                if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+                {
+                    if(OrderMagicNumber() == _mg)
+                    {
+                        ordertickets[realticketnum] = OrderTicket();
+                        realticketnum++;
+                    }
+                }
+            }
+        }
+        ArrayResize(ordertickets, realticketnum); //-- final resize
+    }
+    else
+    {
+        libDebugSendAlert("No order find, maybe there is no closed order yet or the history period was set wrong.","Notifi<" + account + ">log2pgsql");
+    }
     
-}*/
+    //libDebugArrDump(ordertickets);
+
+    //-- load closed orders info from db
+    string sdata[,1];
+    int idata[];
+    int rows = 0;
+    string query = "select orderticket from nst_ta_swap_order where orderstatus=" + _type;
+    string res = pmql_exec(query);
+
+    if(StringLen(res) > 0)
+    {
+        libPgsqlFetchArr(res, sdata);
+        rows = ArraySize(sdata);
+        //outputLog(rows, "Debug");
+        formatOrderArr(sdata, idata);
+    }
+
+    //-- if no order in database
+    if(rows == 0)
+    {
+        if(realticketnum > 0)
+        {
+            for(i = 0; i < realticketnum; i++)
+            {
+                if(_type == 1)
+                    update2closed(ordertickets[i]);
+                else if(_type == 0)
+                    insert2opened(ordertickets[i]);
+            }
+        }
+    }
+
+    //-- 
+    if(realticketnum > 0 && rows > 0)
+    {
+        for(i = 0; i < realticketnum; i++)
+        {
+            if(!libDebugInArr(ordertickets[i], idata))
+            {
+                for(i = 0; i < realticketnum; i++)
+                {
+                    if(_type == 1)
+                    {
+                        Print(ordertickets[i]);
+                        update2closed(ordertickets[i]);
+                    }
+                    else if(_type == 0)
+                        insert2opened(ordertickets[i]);
+                }
+            }
+        }
+    }
+}
+
+//-- update order status to closed to db by order ticket
+int update2closed(int _oid)
+{
+    if(!OrderSelect(_oid, SELECT_BY_TICKET, MODE_HISTORY))
+    {
+        outputLog("There was not find this history order [" + _oid + "], please check.", "Err");
+        return(1);
+    }
+
+    string closetime = libDatetimeTm2str(OrderCloseTime());
+
+    string query = "UPDATE nst_ta_swap_order SET orderstatus=1, closedate='" + closetime + "', getswap=" + OrderSwap() + ", closeprice=" + OrderClosePrice() + ", endprofit=" + OrderProfit() + ",commission=" + OrderCommission() + " WHERE orderticket=" + _oid;
+    string res = pmql_exec(query);
+
+    Print(query + " | " + res);
+    if(libPgsqlIsError(res))
+    {
+        outputLog("update history order status error [" + _oid + "], please check. " + query, "Err");
+        
+        insert2closed(_oid);
+    }
+
+    return(0);
+}
+
+//-- insert order status to closed to db by order ticket
+int insert2closed(int _oid)
+{
+    if(!OrderSelect(_oid, SELECT_BY_TICKET, MODE_HISTORY))
+    {
+        outputLog("There was not find this history order [" + _oid + "], please check.", "Err");
+        return(1);
+    }
+
+    string closetime = libDatetimeTm2str(OrderCloseTime());
+    string opentime = libDatetimeTm2str(OrderOpenTime());
+
+    string query = "INSERT INTO nst_ta_swap_order (userid,orderticket,usemargin,opendate,orderstatus,closedate,getswap,ordertype,openprice,commission,closeprice,endprofit) VALUES (1," + _oid + ",0,'" + opentime + "',1,'" + closetime + "'," + OrderSwap() + "," + OrderType() + "," + OrderOpenPrice() + "," + OrderCommission() + "," + OrderClosePrice() + "," + OrderProfit() + ")";
+    string res = pmql_exec(query);
+
+    if(libPgsqlIsError(res))
+        outputLog("inster into closed order status error [" + _oid + "], please check. "+query, "Err");
+    else
+        outputLog("inster into closed order OK", "Status");
+
+    return(0);
+}
+
+//-- insert new opened order to database;
+int insert2opened(int _oid)
+{
+    if(!OrderSelect(_oid, SELECT_BY_TICKET, MODE_TRADES))
+    {
+        outputLog("There was not find this opened order [" + _oid + "], please check.", "Err");
+        return(1);
+    }
+
+    string opentime = libDatetimeTm2str(OrderOpenTime());
+
+    string query = "INSERT INTO nst_ta_swap_order (userid,orderticket,usemargin,opendate,orderstatus,ordertype,openprice,commission) VALUES (1," + _oid + ",0,'" + opentime + "',0," + OrderType() + "," + OrderOpenPrice() + "," + OrderCommission() + ")";
+    string res = pmql_exec(query);
+
+    if(libPgsqlIsError(res))
+        outputLog("inster into opened order status error [" + _oid + "], please check. "+query, "Err");
+    else
+        outputLog("inster into opened order OK", "Status");
+
+    return(0);
+}
