@@ -12,3 +12,8 @@ string libDatetimeTm2str(datetime _t)
 
     return(strtime);
 }
+
+string libDatetimeGetDate(datetime _t)
+{
+	return(StringSubstr(libDatetimeTm2str(_t), 0, 10));
+}
