@@ -109,6 +109,10 @@ int deinit()
 //-- start
 int start()
 {
+    //-- get account id
+    account = AccountNumber();
+    aid = getAccountIdByAccountNum(account);
+
     getFPI(FPI, Ring);
 
     avgfpi = FPI[0][2]+FPI[1][2];
@@ -500,9 +504,6 @@ void logPriceInfo2Db()
 
     if(currhour > 15)
     {
-        //-- get account id
-        account = AccountNumber();
-        aid = getAccountIdByAccountNum(account);
 
         //-- insert new opened order and new closed order into database
         checkOrderChange(aid, MagicNumber);
@@ -538,15 +539,15 @@ bool checkOrderLogStatus(int _aid)
     string query = "select id from nst_ta_swap_order_daily_settlement where accountid=" + _aid + " and logdatetime > '" + currdate + "'";
     string res = pmql_exec(query);
     if(StringLen(res)>0)
-        return(false);
-    else
         return(true);
+    else
+        return(false);
 }
 
 int logOrderInfo(int _aid, int _mg)
 {
     string currtime = libDatetimeTm2str(TimeLocal());
-    if(checkOrderLogStatus(_aid) != true)
+    if(checkOrderLogStatus(_aid) == true)
         return(1);
 
     int ordertotal = OrdersTotal();
