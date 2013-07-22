@@ -30,7 +30,11 @@
  */
 
 extern int    MagicNumber              = 701;
+extern string LogPriceAccountSettings  = "---Log Price & Account Info Settings---";
 extern bool   LogPriceData             = true;
+extern double FpiTrigger               = 0.9997;
+extern bool   PlaySoundWhenTrigger     = true;
+extern string LogMarginDataSettings    = "---Log Margin Data Settings---";
 extern bool   LogMarginData            = false;
 extern string DatabaseSettings         = "---PostgreSQL Database Settings---";
 extern string g_db_ip_setting          = "localhost";
@@ -62,6 +66,8 @@ int orderLine = 0;
 
 //-- log price info
 int account, aid;
+bool logstatus;
+double avgfpi;
 
 
 
@@ -103,25 +109,29 @@ int deinit()
 //-- start
 int start()
 {
-    //if(Hour()==0 && Minute()==0 && Seconds()==0){}
-        //D_logOrderInfo();
     getFPI(FPI, Ring);
-    if(FPI[0][2]+FPI[1][2] > 0)
+
+    avgfpi = FPI[0][2]+FPI[1][2];
+    if(avgfpi > 0)
     {
-        if((FPI[0][2]+FPI[1][2])/2 >= 0.99965)
-            PlaySound("alert2.wav");
+        if((avgfpi/2) >= FpiTrigger)
+        {
+            if(LogPriceData == true)
+                logPriceInfo2Db();
+
+            if(PlaySoundWhenTrigger == true)
+                PlaySound("alert2.wav");
+        }
     }
+
+    if(LogMarginData == true)
+        logSafeMarginTest2Db();
 
     updateFpiInfo(FPI);
     updateAccountInfo();
     updateSwapInfo(Ring);
     updateOrderInfo(MagicNumber);
-    
-    if(LogMarginData == true)
-        logSafeMarginTest2Db();
-
-    if(LogPriceData == true)
-        logPriceInfo2Db();
+    updateLogStatusInfo(aid);
 
     return(0);
 }
@@ -204,6 +214,11 @@ void initDebugInfo(string _ring[][])
         libVisualCreateTextObj("order_header_col_" + i, orderTableX[i], y, orderTableName[i]);
     }
     orderLine = y;
+
+    //-- set log price and account info table
+    libVisualCreateTextObj("log_price_data", 500, 180, ">>> Log Status", titlecolor);
+    libVisualCreateTextObj("log_price_data_date", 500, 195, libDatetimeGetDate(TimeLocal()), GreenYellow);
+    libVisualCreateTextObj("log_price_data_status", 500, 210, "No log", White);
 }
 
 void updateOrderInfo(int _mn)
@@ -338,6 +353,16 @@ void updateAccountInfo()
         libVisualSetTextObj("account_value_col_" + i, DoubleToStr(ainfo[i], 2), White);
 }
 
+void updateLogStatusInfo(int _aid)
+{
+    libVisualSetTextObj("log_price_data_date", libDatetimeGetDate(TimeLocal()), GreenYellow);
+
+    if(checkOrderLogStatus(_aid) == true)
+        libVisualSetTextObj("log_price_data_status", "Logged");
+    else 
+        libVisualSetTextObj("log_price_data_status", "No Log");
+}
+
 void updateFpiInfo(double &_fpi[][7])
 {
     int digit = 7;
@@ -460,25 +485,45 @@ void logSafeMarginTest2Db()
 
 
 
-void logPriceInfo2Db()
-{
-    //-- get account id
-    account = AccountNumber();
-    aid = getAccountIdByAccountNum(account);
 
-    //-- insert new opened order and new closed order into database
-    checkOrderChange(aid, magicnumber);
-
-    //-- log current order (available order) infarmation to database
-    logOrderInfo(aid, magicnumber);
-
-    //-- log swap rate date to database
-    logSwapRate(aid);
-}
 
 /*
- * Main Funcs
+ * Log Price and account info to pgsql
+ *
  */
+
+void logPriceInfo2Db()
+{
+    int currhour = TimeHour(TimeLocal());
+    /*string currdate = libDatetimeTm2str(TimeLocal());
+    currdate = StringSubstr(currdate, 0, 10);*/
+
+    if(currhour > 15)
+    {
+        //-- get account id
+        account = AccountNumber();
+        aid = getAccountIdByAccountNum(account);
+
+        //-- insert new opened order and new closed order into database
+        checkOrderChange(aid, MagicNumber);
+
+        //-- log current order (available order) infarmation to database
+        logOrderInfo(aid, MagicNumber);
+
+        //-- log swap rate date to database
+        logSwapRate(aid);
+    }
+}
+
+int getAccountIdByAccountNum(int _an)
+{
+    string query = "SELECT id FROM nst_sys_account WHERE accountnumber=" + _an;
+    string res = pmql_exec(query);
+    int id = StrToInteger(StringSubstr(res, 3, -1));
+
+    return(id);
+}
+
 void checkOrderChange(int _aid, int _mg)
 {
     //-- update new closed order to db
@@ -487,19 +532,25 @@ void checkOrderChange(int _aid, int _mg)
     update2db(0, _mg);
 }
 
-int logOrderInfo(int _aid, int _mg)
+bool checkOrderLogStatus(int _aid)
 {
-    string currtime = libDatetimeTm2str(TimeLocal());
-    string currdate = StringSubstr(currtime, 0, 10);
+    string currdate = libDatetimeGetDate(TimeLocal());
     string query = "select id from nst_ta_swap_order_daily_settlement where accountid=" + _aid + " and logdatetime > '" + currdate + "'";
     string res = pmql_exec(query);
     if(StringLen(res)>0)
-    {
+        return(false);
+    else
+        return(true);
+}
+
+int logOrderInfo(int _aid, int _mg)
+{
+    string currtime = libDatetimeTm2str(TimeLocal());
+    if(checkOrderLogStatus(_aid) != true)
         return(1);
-    }
 
     int ordertotal = OrdersTotal();
-    query = "INSERT INTO nst_ta_swap_order_daily_settlement (accountid,orderticket,logdatetime,currentprice,profit,swap) VALUES ";
+    string query = "INSERT INTO nst_ta_swap_order_daily_settlement (accountid,orderticket,logdatetime,currentprice,profit,swap) VALUES ";
 
     //-- order log
     for(int i = 0; i < ordertotal; i++)
@@ -516,7 +567,7 @@ int logOrderInfo(int _aid, int _mg)
         }
     }
     query = StringSubstr(query, 0, StringLen(query) - 1);
-    res = pmql_exec(query);
+    string res = pmql_exec(query);
 
     return(0);
 }
@@ -557,7 +608,7 @@ int logSwapRate(int _aid)
 
     query = StringSubstr(query, 0, StringLen(query) - 1);
 
-    //outputLog(query, "PGSQL");
+    //libDebugOutputLog(query, "PGSQL");
 
     res = pmql_exec(query);
 
@@ -645,7 +696,7 @@ void update2db(int _type, int _mg)
     {
         libPgsqlFetchArr(res, sdata);
         rows = ArraySize(sdata);
-        //outputLog(rows, "Debug");
+        //libDebugOutputLog(rows, "Debug");
         formatOrderArr(sdata, idata);
     }
 
@@ -691,7 +742,7 @@ int update2closed(int _oid)
 {
     if(!OrderSelect(_oid, SELECT_BY_TICKET, MODE_HISTORY))
     {
-        outputLog("There was not find this history order [" + _oid + "], please check.", "Err");
+        libDebugOutputLog("There was not find this history order [" + _oid + "], please check.", "Err");
         return(1);
     }
 
@@ -703,7 +754,7 @@ int update2closed(int _oid)
     Print(query + " | " + res);
     if(libPgsqlIsError(res))
     {
-        outputLog("update history order status error [" + _oid + "], please check. " + query, "Err");
+        libDebugOutputLog("update history order status error [" + _oid + "], please check. " + query, "Err");
         
         insert2closed(_oid);
     }
@@ -716,7 +767,7 @@ int insert2closed(int _oid)
 {
     if(!OrderSelect(_oid, SELECT_BY_TICKET, MODE_HISTORY))
     {
-        outputLog("There was not find this history order [" + _oid + "], please check.", "Err");
+        libDebugOutputLog("There was not find this history order [" + _oid + "], please check.", "Err");
         return(1);
     }
 
@@ -727,9 +778,9 @@ int insert2closed(int _oid)
     string res = pmql_exec(query);
 
     if(libPgsqlIsError(res))
-        outputLog("inster into closed order status error [" + _oid + "], please check. "+query, "Err");
+        libDebugOutputLog("inster into closed order status error [" + _oid + "], please check. "+query, "Err");
     else
-        outputLog("inster into closed order OK", "Status");
+        libDebugOutputLog("inster into closed order OK", "Status");
 
     return(0);
 }
@@ -739,7 +790,7 @@ int insert2opened(int _oid)
 {
     if(!OrderSelect(_oid, SELECT_BY_TICKET, MODE_TRADES))
     {
-        outputLog("There was not find this opened order [" + _oid + "], please check.", "Err");
+        libDebugOutputLog("There was not find this opened order [" + _oid + "], please check.", "Err");
         return(1);
     }
 
@@ -749,9 +800,9 @@ int insert2opened(int _oid)
     string res = pmql_exec(query);
 
     if(libPgsqlIsError(res))
-        outputLog("inster into opened order status error [" + _oid + "], please check. "+query, "Err");
+        libDebugOutputLog("inster into opened order status error [" + _oid + "], please check. "+query, "Err");
     else
-        outputLog("inster into opened order OK", "Status");
+        libDebugOutputLog("inster into opened order OK", "Status");
 
     return(0);
 }
