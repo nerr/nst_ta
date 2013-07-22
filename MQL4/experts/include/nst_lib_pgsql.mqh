@@ -13,7 +13,7 @@ void libPgsqlFetchArr(string _pgres, string &_data[][])
     int ii = 0;
     int digi;
 
-    ArrayResize(_data, pmql_fetchRows(_pgres));
+    ArrayResize(_data, libPgsqlFetchRows(_pgres));
     string res;
     _pgres = "*" + _pgres;
 
