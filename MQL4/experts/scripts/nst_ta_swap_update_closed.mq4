@@ -10,7 +10,6 @@
 
 #property copyright "Copyright ? 2013 Nerrsoft.com"
 #property link      "http://nerrsoft.com"
-#property indicator_chart_window
 
 
 
@@ -46,7 +45,7 @@ int start()
 
     //-- get account id
     account = AccountNumber();
-
+    
     //--
     logOrderInfo(account, MagicNumber);
 
@@ -56,25 +55,30 @@ int start()
 
 int logOrderInfo(int _an, int _mg)
 {
-    int ordertotal = OrdersTotal();
     string query = "INSERT INTO nst_ta_swap_order_ending (userid, orderticket, opendate, closedate, swap, ordertype, openprice, closeprice, profit, commission, accountid, ordercomment) VALUES ";
-
+    string opendt = "";
+    string closedt = "";
     //-- order log
-    for(int i = 0; i < ordertotal; i++)
+    for(int i = 0; i < 1000; i++)
     {
         if(OrderSelect(i, SELECT_BY_POS, MODE_HISTORY))
         {
             if(OrderMagicNumber() == _mg)
             {
+                opendt = libDatetimeTm2str(OrderOpenTime());
+                closedt = libDatetimeTm2str(OrderCloseTime());
                 query = StringConcatenate(
                     query,
-                    "(5, " + OrderTicket() + ", '" + OrderOpenTime() + "', '" + OrderCloseTime() + "', " + OrderSwap() + ", " + OrderType() + ", " + OrderOpenPrice() + ", " + OrderClosePrice() + ", " + OrderProfit() + "," + OrderCommission() + ", " + _an + ", '" + OrderComment() + "'),"
+                    "(5, " + OrderTicket() + ", '" + opendt + "', '" + closedt + "', " + OrderSwap() + ", " + OrderType() + ", " + OrderOpenPrice() + ", " + OrderClosePrice() + ", " + OrderProfit() + "," + OrderCommission() + ", " + _an + ", '" + OrderComment() + "'),"
                 );
             }
+            //Print(OrderTicket());
         }
     }
     query = StringSubstr(query, 0, StringLen(query) - 1);
     string res = pmql_exec(query);
+    
+    Alert(res);
 
     return(0);
 }
