@@ -28,7 +28,7 @@
  *
  */
 
-int MagicNumber = 701;
+int MagicNumber = 100;
 int account;
 string brokername;
 
@@ -36,7 +36,7 @@ string brokername;
 int start()
 {
     //-- begin script and connect to pgsql
-    string res = pmql_connect("localhost", "5432", "postgres", "911911", "nst");
+    string res = pmql_connect("192.168.11.6", "5432", "postgres", "911911", "nst");
     if((res != "ok") && (res != "already connected"))
     {
         libDebugOutputLog("DB not connected!", "PGSQL-ERR");
@@ -58,22 +58,26 @@ int start()
 //-- log order information to database
 int log2db(int _an, string _bn, int _mn)
 {
-	string query = "INSERT INTO test_order_info (orderticket, opendate, symbol, lots, commission, swap, ordertype, openprice, sl, tp, profit, ordercomment, broker, accountnum) VALUES ";
+    string query = "INSERT INTO test_order_info (orderticket, opendate, symbol, lots, commission, swap, ordertype, openprice, sl, tp, profit, ordercomment, broker, accountnum, longswap, shortswap) VALUES ";
     string opendt = "";
 
-    int ordernum = OrderTotal();
+    double longswap, shortswap;
+
+    int ordernum = OrdersTotal();
 
     //-- order log
     for(int i = 0; i < ordernum; i++)
     {
-        if(OrderSelect(i, SELECT_BY_POS, MODE_HISTORY))
+        if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
         {
-            if(OrderMagicNumber() == _mg)
+            if(OrderMagicNumber() == _mn)
             {
                 opendt = libDatetimeTm2str(OrderOpenTime());
+                longswap = MarketInfo(OrderSymbol(), MODE_SWAPLONG);
+                shortswap= MarketInfo(OrderSymbol(), MODE_SWAPSHORT);
                 query = StringConcatenate(
                     query,
-                    "(" + OrderTicket() + ", '" + opendt + "', '" + OrderSymbol() + "', " + OrderSize() + ", " + OrderCommission() + ", " + OrderSwap() + ", " + OrderType() + ", " + OrderPrice() + ", " + OrderStopLoss() + ", " + OrderTakeProfit() + ", '" + OrderComment() + "', '" + _bn + "', '" + _an + "'),";
+                    "(" + OrderTicket() + ", '" + opendt + "', '" + OrderSymbol() + "', " + OrderLots() + ", " + OrderCommission() + ", " + OrderSwap() + ", " + OrderType() + ", " + OrderOpenPrice() + ", " + OrderStopLoss() + ", " + OrderTakeProfit() + ", " + OrderProfit() + ", '" + OrderComment() + "', '" + _bn + "', '" + _an + "'),"
                 );
             }
             //Print(OrderTicket());
@@ -81,8 +85,6 @@ int log2db(int _an, string _bn, int _mn)
     }
     query = StringSubstr(query, 0, StringLen(query) - 1);
     string res = pmql_exec(query);
-    
-    Alert(res);
 
     return(0);
 }
